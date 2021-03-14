@@ -1,0 +1,145 @@
+﻿<UserControl
+    x:Class="SimplePhotoEditor.Views.MetadataPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:SimplePhotoEditor.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:prism="http://prismlibrary.com/"
+    xmlns:properties="clr-namespace:SimplePhotoEditor.Properties"
+    xmlns:viewmodels="clr-namespace:SimplePhotoEditor.ViewModels"
+    d:DataContext="{d:DesignInstance Type=viewmodels:MetadataViewModel}"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    prism:ViewModelLocator.AutoWireViewModel="True"
+    Style="{StaticResource BaseUserControlStyle}"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <Thickness x:Key="GridMargin">5</Thickness>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="5*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Label
+                Grid.Row="0"
+                HorizontalAlignment="Right"
+                Grid.Column="0"
+                Margin="{StaticResource GridMargin}"
+                Content="File Name:" />
+            <TextBox
+                Grid.Row="0"
+                Grid.Column="1"
+                Margin="{StaticResource GridMargin}"
+                Text="{Binding FileName, Mode=TwoWay}" />
+            <Label
+                Grid.Row="1"
+                HorizontalAlignment="Right"
+                Grid.Column="0"
+                Margin="{StaticResource GridMargin}"
+                Content="Title:" />
+            <TextBox
+                Grid.Row="1"
+                Grid.Column="1"
+                Margin="{StaticResource GridMargin}"
+                Text="{Binding Title, Mode=TwoWay}" />
+            <Label
+                Grid.Row="2"
+                HorizontalAlignment="Right"
+                Grid.Column="0"
+                Margin="{StaticResource GridMargin}"
+                Content="Subject:" />
+            <TextBox
+                Grid.Row="2"
+                Grid.Column="1"
+                Margin="{StaticResource GridMargin}"
+                Text="{Binding Subject, Mode=TwoWay}" />
+            <Label
+                Grid.Row="3"
+                HorizontalAlignment="Right"
+                Grid.Column="0"
+                Margin="{StaticResource GridMargin}"
+                Content="Comments:" />
+            <TextBox
+                Grid.Row="3"
+                Grid.Column="1"
+                Margin="{StaticResource GridMargin}"
+                Text="{Binding Comments, Mode=TwoWay}" />
+            <Label
+                Grid.Row="4"
+                Grid.Column="0"
+                Margin="{StaticResource GridMargin}"
+                Content="Date Taken:" />
+            <DatePicker
+                Grid.Row="4"
+                Grid.Column="1"
+                Margin="{StaticResource GridMargin}"
+                Text="{Binding DateTaken, Mode=TwoWay}" />
+            <Label
+                Grid.Row="5"
+                Grid.Column="0"
+                Margin="{StaticResource GridMargin}"
+                Content="Tags:" />
+            <ListBox
+                Grid.Row="5"
+                Grid.Column="1"
+                Margin="{StaticResource GridMargin}"
+                ItemsSource="{Binding Tags, Mode=TwoWay}" />
+            <Label
+                Grid.Row="6"
+                Grid.Column="0"
+                Margin="{StaticResource GridMargin}"
+                Content="Add/Remove Tag:" />
+            <Grid Grid.Row="6" Grid.Column="1" Margin="{StaticResource GridMargin}" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" Text="{Binding Tag, Mode=TwoWay}" />
+                <Button Grid.Column="1">
+                    <TextBlock
+                        FontFamily="Segoe MDL2 Assets"
+                        FontSize="14"
+                        Text="&#xE109;" />
+                </Button>
+                <Button Grid.Column="2">
+                    <TextBlock
+                        FontFamily="Segoe MDL2 Assets"
+                        FontSize="14"
+                        Text="&#xE108;" />
+                </Button>
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="1" Height="60">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Cancel" />
+            <Button
+                Grid.Column="1"
+                Command="{Binding SaveCommand}"
+                Content="Save" />
+            <Button Grid.Column="2" Content="Save and Next" />
+        </Grid>
+    </Grid>
+</UserControl>

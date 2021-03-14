@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31105.61
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimplePhotoEditor", "SimplePhotoEditor\SimplePhotoEditor.csproj", "{40298CE8-EC81-458E-B7B6-6142DB8884F7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimplePhotoEditor.Core", "SimplePhotoEditor.Core\SimplePhotoEditor.Core.csproj", "{B472769E-040F-4071-9C7B-CDC6B63D9179}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{40298CE8-EC81-458E-B7B6-6142DB8884F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40298CE8-EC81-458E-B7B6-6142DB8884F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40298CE8-EC81-458E-B7B6-6142DB8884F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40298CE8-EC81-458E-B7B6-6142DB8884F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B472769E-040F-4071-9C7B-CDC6B63D9179}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B472769E-040F-4071-9C7B-CDC6B63D9179}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B472769E-040F-4071-9C7B-CDC6B63D9179}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B472769E-040F-4071-9C7B-CDC6B63D9179}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {70C92190-802A-477A-80BD-B3ACE331AC69}
+	EndGlobalSection
+EndGlobal
