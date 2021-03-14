@@ -56,7 +56,7 @@ namespace SimplePhotoEditor
             {
                 App.Current.MainWindow.Width = Convert.ToDouble(App.Current.Properties["AppWidth"].ToString());
             }
-        
+
 
             base.OnInitialized();
             await Task.CompletedTask;
@@ -83,6 +83,7 @@ namespace SimplePhotoEditor
             containerRegistry.RegisterForNavigation<SettingsPage, SettingsViewModel>(PageKeys.Settings);
             containerRegistry.RegisterForNavigation<ThumbnailPage, ThumbnailViewModel>(PageKeys.Thumbnail);
             containerRegistry.RegisterForNavigation<SingleImagePage, SingleImageViewModel>(PageKeys.SingleImage);
+            containerRegistry.RegisterForNavigation<MetadataPage, MetadataViewModel>();
             containerRegistry.RegisterForNavigation<ShellWindow, ShellViewModel>();
 
             // Configuration

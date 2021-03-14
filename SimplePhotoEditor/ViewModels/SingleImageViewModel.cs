@@ -19,7 +19,7 @@ using Prism.Regions;
 
 namespace SimplePhotoEditor.ViewModels
 {
-    public class SingleImageViewModel : BindableBase, IAutoInitialize
+    public class SingleImageViewModel : BindableBase, INavigationAware
     {
         private string filePath;
         private ImageFactory selectedImage;
@@ -159,7 +159,7 @@ namespace SimplePhotoEditor.ViewModels
                     if (File.Exists(FilePath))
                     {
                         GetImagePreview();
-                        GetMetadata();
+                        ImageSelected();
                     }
                 }
             }
@@ -258,7 +258,17 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
-            FilePath = navigationContext.Parameters["FilePath"].ToString();
+            FilePath = navigationContext.Parameters["FilePath"]?.ToString();
+        }
+
+        public bool IsNavigationTarget(NavigationContext navigationContext)
+        {
+            return true;
+        }
+
+        public void OnNavigatedFrom(NavigationContext navigationContext)
+        {
+
         }
         //        internal void DrawCropRectangle(object sender, MouseButtonEventArgs e)
         //        {
