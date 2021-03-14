@@ -83,6 +83,7 @@
                 Text="{Binding Comments, Mode=TwoWay}" />
             <Label
                 Grid.Row="4"
+                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
                 Content="Date Taken:" />
@@ -93,6 +94,7 @@
                 Text="{Binding DateTaken, Mode=TwoWay}" />
             <Label
                 Grid.Row="5"
+                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
                 Content="Tags:" />
@@ -103,6 +105,7 @@
                 ItemsSource="{Binding Tags, Mode=TwoWay}" />
             <Label
                 Grid.Row="6"
+                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
                 Content="Add/Remove Tag:" />

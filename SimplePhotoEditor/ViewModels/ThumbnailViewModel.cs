@@ -47,6 +47,7 @@ namespace SimplePhotoEditor.ViewModels
         public ICommand FolderBrowseCommand => folderBrowseCommand ??= new DelegateCommand(FolderBrowse);
         public AsyncObservableCollection<Thumbnail> Images { get => images; set => SetProperty(ref images, value); }
         public MetadataViewModel MetaDataViewModel { get => metadataViewModel; set => SetProperty(ref metadataViewModel, value); }
+
         public Thumbnail SelectedImage
         {
             get => selectedImage;
@@ -121,6 +122,7 @@ namespace SimplePhotoEditor.ViewModels
                 Task.Run(() => CreateThumbnails());
             }
         }
+
         private void ImageSelected()
         {
             metadataViewModel.FilePath = FilePath;

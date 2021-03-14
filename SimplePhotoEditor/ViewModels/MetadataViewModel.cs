@@ -9,6 +9,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Linq;
 
@@ -21,6 +22,7 @@ namespace SimplePhotoEditor.ViewModels
         private string title;
         private string subject;
         private string comments;
+        private bool isSaving = false;
         private DateTime dateTaken;
         private ObservableCollection<string> tags;
         private string tag;
@@ -48,17 +50,25 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        private void OnSave()
+        public bool IsSaving { get => isSaving; set => SetProperty(ref isSaving, value); }
+
+        private async void OnSave()
+        {
+            IsSaving = true;
+            await Task.Run(async () => await SaveImage());
+            IsSaving = false;
+        }
+
+        private async Task SaveImage()
         {
             ShellFile shellFile = ShellFile.FromFilePath(FilePath);
-
 
             if (Title != shellFile.Properties.System.Title.Value)
             {
                 shellFile.Properties.System.Title.Value = Title;
-}
+            }
             if (Subject != shellFile.Properties.System.Subject.Value)
-{
+            {
                 shellFile.Properties.System.Subject.Value = Subject;
             }
             if (Comments != shellFile.Properties.System.Comment.Value)
