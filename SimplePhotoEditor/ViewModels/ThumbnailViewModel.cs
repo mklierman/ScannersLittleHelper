@@ -20,6 +20,9 @@ using System.Drawing;
 using System.Windows.Interop;
 using Prism.Regions;
 using SimplePhotoEditor.Constants;
+using System.Collections.Generic;
+using System.Windows.Controls;
+using SimplePhotoEditor.Helpers;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -27,20 +30,74 @@ namespace SimplePhotoEditor.ViewModels
     {
         private string currentFolder;
         private string filePath;
+        private CompositeCommand SaveNextCompositeCommand = new CompositeCommand();
+        private KeyValuePair<string, string>[] sortByOptions = SortOptions.SortByKeyValuePair;
+        private string selectedSortBy = "FileName";
+        private KeyValuePair<string, string>[] sortAscDescOptions = SortOptions.SortAscDescKeyValuePair;
+        private string selectedSortAscDesc = "Asc";
+        private ICommand refreshCommand;
         private IRegionManager RegionManager;
+        private ICommand folderBrowseCommand;
+        private AsyncObservableCollection<Thumbnail> images = new AsyncObservableCollection<Thumbnail>();
+        private MetadataViewModel metadataViewModel;
+        private Thumbnail selectedImage;
+
+        public KeyValuePair<string, string>[] SortByOptions { get => sortByOptions; set => SetProperty(ref sortByOptions, value); }
+        public string SelectedSortBy { get => selectedSortBy; set { SetProperty(ref selectedSortBy, value); OrderImageList(); } }
+        public KeyValuePair<string, string>[] SortAscDescOptions { get => sortAscDescOptions; set => SetProperty(ref sortAscDescOptions, value); }
+        public string SelectedSortAscDesc
+        {
+            get => selectedSortAscDesc;
+            set
+            {
+                SetProperty(ref selectedSortAscDesc, value);
+                OrderImageList();
+            }
+        }
+        public ICommand RefreshCommand => refreshCommand ??= new DelegateCommand(RefreshImageList);
+        private ICommand NextImageCommand => new DelegateCommand(SelectNextImage);
+
+        private void RefreshImageList()
+        {
+            Images.Clear();
+            Task.Run(() => CreateThumbnails());
+        }
+
+        private void OrderImageList()
+        {
+            var sortedList = new AsyncObservableCollection<Thumbnail>();
+            switch (SelectedSortBy, SelectedSortAscDesc)
+            {
+                case ("CreatedDate", "Asc"):
+                    Images.Sort(o => o.CreatedDate);
+                    break;
+                case ("ModifiedDate", "Asc"):
+                    Images.Sort(o => o.ModifiedDate);
+                    break;
+                case ("FileName", "Asc"):
+                    Images.Sort(o => o.FileName);
+                    break;
+                case ("CreatedDate", "Desc"):
+                    Images.Sort(o => o.CreatedDate, true);
+                    break;
+                case ("ModifiedDate", "Desc"):
+                    Images.Sort(o => o.CreatedDate, true);
+                    break;
+                case ("FileName", "Desc"):
+                    Images.Sort(o => o.CreatedDate, true);
+                    break;
+            }
+
+        }
 
         internal void OpenSingleImage()
         {
 
             var navParams = new NavigationParameters();
             navParams.Add("FilePath", SelectedImage.FilePath);
-                RegionManager.RequestNavigate(Regions.Main, PageKeys.SingleImage, navParams);
+            RegionManager.RequestNavigate(Regions.Main, PageKeys.SingleImage, navParams);
         }
 
-        private ICommand folderBrowseCommand;
-        private AsyncObservableCollection<Thumbnail> images = new AsyncObservableCollection<Thumbnail>();
-        private MetadataViewModel metadataViewModel = new MetadataViewModel();
-        private Thumbnail selectedImage;
 
         public ThumbnailViewModel()
         {
@@ -79,7 +136,11 @@ namespace SimplePhotoEditor.ViewModels
             set
             {
                 SetProperty(ref selectedImage, value);
-                MetaDataViewModel.FilePath = value.FilePath;
+                if (MetaDataViewModel == null)
+                {
+                    MetaDataViewModel = new MetadataViewModel(RegionManager);
+                }
+                MetaDataViewModel.FilePath = value?.FilePath;
             }
         }
 
@@ -107,10 +168,19 @@ namespace SimplePhotoEditor.ViewModels
             return retval;
         }
 
+        public void SelectNextImage()
+        {
+            var currentImageIndex = Images.IndexOf(SelectedImage);
+            if (currentImageIndex < Images.Count)
+            {
+                SelectedImage = Images[currentImageIndex + 1];
+            }
+        }
+
         private void CreateThumbnails()
         {
             DirectoryInfo folder = new DirectoryInfo(CurrentFolder);
-            foreach (FileInfo img in folder.GetFiles("*.tif*").OrderByDescending(x => x.Name).ToArray())
+            foreach (FileInfo img in folder?.GetFiles("*.tif*").OrderBy(x => x.Name).ToArray())
             {
                 ShellFile shellFile = ShellFile.FromFilePath(img.FullName);
 

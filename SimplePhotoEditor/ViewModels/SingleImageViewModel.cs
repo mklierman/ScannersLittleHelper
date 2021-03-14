@@ -30,8 +30,8 @@ namespace SimplePhotoEditor.ViewModels
         private string title;
         private string subject;
         private string comments;
-        private MetadataViewModel metadataViewModel = new MetadataViewModel();
-
+        private MetadataViewModel metadataViewModel;
+        private IRegionManager RegionManager;
         private DateTime dateTaken;
         private ObservableCollection<string> tags;
         private string tag;
@@ -46,15 +46,9 @@ namespace SimplePhotoEditor.ViewModels
         private ICommand undoCommand;
 
 
-        public SingleImageViewModel()
+        public SingleImageViewModel(IRegionManager regionManager)
         {
-            var theme = ThemeManager.Current.DetectTheme(SimplePhotoEditor.App.Current);
-            //FilePath = @"C:\temp\ASD.tif";
-            //ImageSelected();
-
-
-
-            //GetMetadata();
+            RegionManager = regionManager;
         }
         public ICommand CancelCommand => cancelCommand ?? (cancelCommand = new DelegateCommand(GetMetadata));
         public ICommand SaveCommand => saveCommand ?? (saveCommand = new DelegateCommand(OnSave));
@@ -69,6 +63,10 @@ namespace SimplePhotoEditor.ViewModels
         public MetadataViewModel MetaDataViewModel { get => metadataViewModel; set => SetProperty(ref metadataViewModel, value); }
         private void ImageSelected()
         {
+            if (MetaDataViewModel == null)
+            {
+                MetaDataViewModel = new MetadataViewModel(RegionManager);
+            }
             metadataViewModel.FilePath = FilePath;
         }
 

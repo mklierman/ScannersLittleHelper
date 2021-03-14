@@ -140,12 +140,18 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Cancel" />
+            <Button
+                Grid.Column="0"
+                Command="{Binding CancelCommand}"
+                Content="Cancel" />
             <Button
                 Grid.Column="1"
                 Command="{Binding SaveCommand}"
                 Content="Save" />
-            <Button Grid.Column="2" Content="Save and Next" />
+            <Button
+                Grid.Column="2"
+                Command="{Binding SaveNextCommand}"
+                Content="Save and Next" />
         </Grid>
     </Grid>
 </UserControl>

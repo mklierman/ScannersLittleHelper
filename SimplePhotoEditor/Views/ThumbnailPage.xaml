@@ -12,9 +12,10 @@
     d:DataContext="{d:DesignInstance Type=viewmodels:ThumbnailViewModel}"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    x:Name="Thumbnail"
     prism:ViewModelLocator.AutoWireViewModel="True"
     Style="{StaticResource BaseUserControlStyle}"
-    mc:Ignorable="d">
+    mc:Ignorable="d" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <cvtr:BoolToColorConverter x:Key="BoolToColorConverter" />
     </UserControl.Resources>
@@ -39,12 +40,14 @@
                 <Grid Grid.Column="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="8*" />
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Label
@@ -59,9 +62,33 @@
                             Grid.Column="2"
                             Command="{Binding FolderBrowseCommand}"
                             Content="Browse" />
+                        <Button
+                            Grid.Column="3"
+                            Command="{Binding RefreshCommand}"
+                            Content="Refresh" />
+                    </Grid>
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="Sort By:" />
+                        <ComboBox
+                            Grid.Column="1"
+                            DisplayMemberPath="Value"
+                            ItemsSource="{Binding SortByOptions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SelectedValue="{Binding SelectedSortBy, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SelectedValuePath="Key" />
+                        <ComboBox
+                            Grid.Column="2"
+                            DisplayMemberPath="Value"
+                            ItemsSource="{Binding SortAscDescOptions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SelectedValue="{Binding SelectedSortAscDesc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SelectedValuePath="Key" />
                     </Grid>
                     <ListView
-                        Grid.Row="1"
+                        Grid.Row="2"
                         ItemsSource="{Binding Images}"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                         SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
@@ -75,8 +102,9 @@
                                     <Image
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Top"
+                                        MouseLeftButtonDown="Image_MouseLeftButtonDown"
                                         Source="{Binding Image}"
-                                        Stretch="None" MouseLeftButtonDown="Image_MouseLeftButtonDown" />
+                                        Stretch="None" />
                                     <TextBlock
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Bottom"

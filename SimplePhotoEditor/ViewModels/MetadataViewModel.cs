@@ -2,6 +2,9 @@
 using Newtonsoft.Json.Linq;
 using Prism.Commands;
 using Prism.Mvvm;
+using Prism.Regions;
+using SimplePhotoEditor.Constants;
+using SimplePhotoEditor.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,6 +20,9 @@ namespace SimplePhotoEditor.ViewModels
 {
     public class MetadataViewModel : BindableBase
     {
+        private ThumbnailViewModel ThumbnailViewModel;
+        private SingleImageViewModel SingleImageViewModel;
+        private IRegionManager regionManager;
         private string filePath;
         private string fileName;
         private string title;
@@ -26,14 +32,27 @@ namespace SimplePhotoEditor.ViewModels
         private DateTime dateTaken;
         private ObservableCollection<string> tags;
         private string tag;
+        private CompositeCommand SaveAndNextCompositeCommand;
         private ICommand saveCommand;
         private ICommand saveNextCommand;
         private ICommand cancelCommand;
 
-
         public ICommand CancelCommand => cancelCommand ?? (cancelCommand = new DelegateCommand(GetMetadata));
         public ICommand SaveCommand => saveCommand ?? (saveCommand = new DelegateCommand(OnSave));
-        public ICommand SaveNextCommand => saveNextCommand ?? (saveNextCommand = new DelegateCommand(OnSave));
+        public ICommand SaveNextCommand => saveNextCommand ?? (saveNextCommand = new DelegateCommand(OnSaveAndNext));
+
+        public MetadataViewModel(IRegionManager regionManager)
+        {
+            this.regionManager = regionManager;
+        }
+
+        private async void OnSaveAndNext()
+        {
+            await SaveImage();
+            var thumbnailView = (ThumbnailPage)regionManager.Regions[Regions.Main].GetView(PageKeys.Thumbnail);
+            var thumbnailVM = (ThumbnailViewModel)thumbnailView.DataContext;
+            thumbnailVM.SelectNextImage();
+        }
 
         private void GetMetadata()
         {

@@ -1,6 +1,6 @@
 ﻿namespace SimplePhotoEditor.Constants
 {
-    public class PageKeys
+    public static class PageKeys
     {
         public const string SingleImage = "SingleImage";
         public const string Thumbnail = "Thumbnail";

@@ -28,5 +28,10 @@ namespace SimplePhotoEditor.Views
                 ViewModel.OpenSingleImage();
             }
         }
+
+        private void UserControl_Initialized(object sender, System.EventArgs e)
+        {
+
+        }
     }
 }
