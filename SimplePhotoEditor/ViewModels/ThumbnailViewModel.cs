@@ -18,6 +18,8 @@ using System.Linq;
 using Microsoft.WindowsAPICodePack.Shell;
 using System.Drawing;
 using System.Windows.Interop;
+using Prism.Regions;
+using SimplePhotoEditor.Constants;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -25,6 +27,16 @@ namespace SimplePhotoEditor.ViewModels
     {
         private string currentFolder;
         private string filePath;
+        private IRegionManager RegionManager;
+
+        internal void OpenSingleImage()
+        {
+
+            var navParams = new NavigationParameters();
+            navParams.Add("FilePath", SelectedImage.FilePath);
+                RegionManager.RequestNavigate(Regions.Main, PageKeys.SingleImage, navParams);
+        }
+
         private ICommand folderBrowseCommand;
         private AsyncObservableCollection<Thumbnail> images = new AsyncObservableCollection<Thumbnail>();
         private MetadataViewModel metadataViewModel = new MetadataViewModel();
@@ -32,6 +44,19 @@ namespace SimplePhotoEditor.ViewModels
 
         public ThumbnailViewModel()
         {
+            if (App.Current.Properties.Contains("LastThumbnailFolder"))
+            {
+                CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
+                if (!string.IsNullOrEmpty(CurrentFolder))
+                {
+                    Task.Run(() => CreateThumbnails());
+                }
+            }
+        }
+
+        public ThumbnailViewModel(IRegionManager regionManager)
+        {
+            RegionManager = regionManager;
             if (App.Current.Properties.Contains("LastThumbnailFolder"))
             {
                 CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();

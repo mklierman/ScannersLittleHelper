@@ -15,10 +15,11 @@ using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Windows.Forms;
 using ControlzEx.Theming;
+using Prism.Regions;
 
 namespace SimplePhotoEditor.ViewModels
 {
-    public class SingleImageViewModel : BindableBase
+    public class SingleImageViewModel : BindableBase, IAutoInitialize
     {
         private string filePath;
         private ImageFactory selectedImage;
@@ -48,15 +49,10 @@ namespace SimplePhotoEditor.ViewModels
         public SingleImageViewModel()
         {
             var theme = ThemeManager.Current.DetectTheme(SimplePhotoEditor.App.Current);
-            FilePath = @"C:\temp\ASD.tif";
-            ImageSelected();
+            //FilePath = @"C:\temp\ASD.tif";
+            //ImageSelected();
 
-            var bmi = new BitmapImage();
-            bmi.BeginInit();
-            bmi.CacheOption = BitmapCacheOption.OnLoad;
-            bmi.UriSource = new Uri(FilePath);
-            bmi.EndInit();
-            PreviewImage = bmi;
+
 
             //GetMetadata();
         }
@@ -74,6 +70,16 @@ namespace SimplePhotoEditor.ViewModels
         private void ImageSelected()
         {
             metadataViewModel.FilePath = FilePath;
+        }
+
+        private void GetImagePreview()
+        {
+            var bmi = new BitmapImage();
+            bmi.BeginInit();
+            bmi.CacheOption = BitmapCacheOption.OnLoad;
+            bmi.UriSource = new Uri(FilePath);
+            bmi.EndInit();
+            PreviewImage = bmi;
         }
 
         private void GetMetadata()
@@ -150,6 +156,11 @@ namespace SimplePhotoEditor.ViewModels
                 {
                     filePath = value;
                     RaisePropertyChanged(nameof(FilePath));
+                    if (File.Exists(FilePath))
+                    {
+                        GetImagePreview();
+                        GetMetadata();
+                    }
                 }
             }
         }
@@ -245,31 +256,34 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
+        public void OnNavigatedTo(NavigationContext navigationContext)
+        {
+            FilePath = navigationContext.Parameters["FilePath"].ToString();
+        }
+        //        internal void DrawCropRectangle(object sender, MouseButtonEventArgs e)
+        //        {
+        //            if (e.LeftButton == MouseButtonState.Pressed)
+        //            {
+        //                System.Windows.Point point = e.GetPosition((System.Windows.IInputElement)sender);
 
-//        internal void DrawCropRectangle(object sender, MouseButtonEventArgs e)
-//        {
-//            if (e.LeftButton == MouseButtonState.Pressed)
-//            {
-//                System.Windows.Point point = e.GetPosition((System.Windows.IInputElement)sender);
+        //                cropX = point.X;
+        //                cropY = point.Y;
+        //                cropPen = new System.Drawing.Pen(System.Drawing.Color.Black, 1);
+        //                cropPen.DashStyle = System.Drawing.Drawing2D.DashStyle.DashDot;
+        //                System.Windows.Controls.Image imageControl = (System.Windows.Controls.Image)sender;
+        //                imageControl.UpdateLayout();
+        //            }
 
-//                cropX = point.X;
-//                cropY = point.Y;
-//                cropPen = new System.Drawing.Pen(System.Drawing.Color.Black, 1);
-//                cropPen.DashStyle = System.Drawing.Drawing2D.DashStyle.DashDot;
-//                System.Windows.Controls.Image imageControl = (System.Windows.Controls.Image)sender;
-//                imageControl.UpdateLayout();
-//            }
-
-//        }
+        //        }
 
 
-//        internal void MoveCropRectangle(object sender, MouseEventArgs e)
-//{
-//            cropWidth = e.X - cropX;
-//            cropHeight = e.Y - cropY;
-//            System.Windows.Controls.Image imageControl = (System.Windows.Controls.Image)sender;
-//            imageControl.CreateGraphics().DrawRectangle(cropPen, cropX, cropY, cropWidth, cropHeight);
-//            imageControl.
-//        }
+        //        internal void MoveCropRectangle(object sender, MouseEventArgs e)
+        //{
+        //            cropWidth = e.X - cropX;
+        //            cropHeight = e.Y - cropY;
+        //            System.Windows.Controls.Image imageControl = (System.Windows.Controls.Image)sender;
+        //            imageControl.CreateGraphics().DrawRectangle(cropPen, cropX, cropY, cropWidth, cropHeight);
+        //            imageControl.
+        //        }
     }
 }

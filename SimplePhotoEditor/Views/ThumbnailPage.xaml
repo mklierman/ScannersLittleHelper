@@ -2,13 +2,13 @@
     x:Class="SimplePhotoEditor.Views.ThumbnailPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:cvtr="clr-namespace:SimplePhotoEditor.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:prism="http://prismlibrary.com/"
     xmlns:properties="clr-namespace:SimplePhotoEditor.Properties"
     xmlns:viewmodels="clr-namespace:SimplePhotoEditor.ViewModels"
     xmlns:views="clr-namespace:SimplePhotoEditor.Views"
-    xmlns:cvtr="clr-namespace:SimplePhotoEditor.Converters"
     d:DataContext="{d:DesignInstance Type=viewmodels:ThumbnailViewModel}"
     d:DesignHeight="450"
     d:DesignWidth="800"
@@ -31,10 +31,6 @@
             Grid.Row="1"
             Margin="{StaticResource MediumLeftRightMargin}"
             Background="{DynamicResource MahApps.Brushes.Gray10}">
-            <!--
-                The Mahapps Gray10 color represents where you should place your content.
-                Place your content here.
-            -->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -71,11 +67,16 @@
                         SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel VerticalAlignment="Stretch" Orientation="Vertical" Margin="2" Background="{Binding MetaDataModified, Converter={StaticResource BoolToColorConverter}}">
+                                <StackPanel
+                                    Margin="2"
+                                    VerticalAlignment="Stretch"
+                                    Background="{Binding MetaDataModified, Converter={StaticResource BoolToColorConverter}}"
+                                    Orientation="Vertical">
                                     <Image
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Top"
-                                        Source="{Binding Image}" Stretch="None" />
+                                        Source="{Binding Image}"
+                                        Stretch="None" MouseLeftButtonDown="Image_MouseLeftButtonDown" />
                                     <TextBlock
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Bottom"
@@ -85,7 +86,7 @@
                         </ListView.ItemTemplate>
                         <ListView.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal"/>
+                                <WrapPanel Orientation="Horizontal" />
                             </ItemsPanelTemplate>
                         </ListView.ItemsPanel>
                     </ListView>

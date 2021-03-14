@@ -39,9 +39,9 @@
             </Grid.RowDefinitions>
             <Label
                 Grid.Row="0"
-                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
+                HorizontalAlignment="Right"
                 Content="File Name:" />
             <TextBox
                 Grid.Row="0"
@@ -50,9 +50,9 @@
                 Text="{Binding FileName, Mode=TwoWay}" />
             <Label
                 Grid.Row="1"
-                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
+                HorizontalAlignment="Right"
                 Content="Title:" />
             <TextBox
                 Grid.Row="1"
@@ -61,9 +61,9 @@
                 Text="{Binding Title, Mode=TwoWay}" />
             <Label
                 Grid.Row="2"
-                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
+                HorizontalAlignment="Right"
                 Content="Subject:" />
             <TextBox
                 Grid.Row="2"
@@ -72,9 +72,9 @@
                 Text="{Binding Subject, Mode=TwoWay}" />
             <Label
                 Grid.Row="3"
-                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
+                HorizontalAlignment="Right"
                 Content="Comments:" />
             <TextBox
                 Grid.Row="3"
@@ -83,9 +83,9 @@
                 Text="{Binding Comments, Mode=TwoWay}" />
             <Label
                 Grid.Row="4"
-                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
+                HorizontalAlignment="Right"
                 Content="Date Taken:" />
             <DatePicker
                 Grid.Row="4"
@@ -94,9 +94,9 @@
                 Text="{Binding DateTaken, Mode=TwoWay}" />
             <Label
                 Grid.Row="5"
-                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
+                HorizontalAlignment="Right"
                 Content="Tags:" />
             <ListBox
                 Grid.Row="5"
@@ -105,11 +105,14 @@
                 ItemsSource="{Binding Tags, Mode=TwoWay}" />
             <Label
                 Grid.Row="6"
-                HorizontalAlignment="Right"
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
+                HorizontalAlignment="Right"
                 Content="Add/Remove Tag:" />
-            <Grid Grid.Row="6" Grid.Column="1" Margin="{StaticResource GridMargin}" >
+            <Grid
+                Grid.Row="6"
+                Grid.Column="1"
+                Margin="{StaticResource GridMargin}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />

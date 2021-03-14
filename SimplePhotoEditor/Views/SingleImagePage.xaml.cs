@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.ComponentModel;
 using System.Composition;
+using Prism.Regions;
 
 namespace SimplePhotoEditor.Views
 {
@@ -27,6 +28,11 @@ namespace SimplePhotoEditor.Views
         private void Image_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
             //ViewModel.MoveCropRectangle(sender, e);
+        }
+
+        public void OnNavigatedTo(NavigationContext navigationContext)
+        {
+            ViewModel.FilePath = navigationContext.Parameters["FilePath"].ToString();
         }
     }
 }
