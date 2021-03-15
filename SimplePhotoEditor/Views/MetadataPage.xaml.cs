@@ -31,5 +31,13 @@ namespace SimplePhotoEditor.Views
             set { this.DataContext = value; }
             get { return (MetadataViewModel)this.DataContext; }
         }
+
+        private void TagTextboxKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                ViewModel.AddTag();
+            }
+        }
     }
 }

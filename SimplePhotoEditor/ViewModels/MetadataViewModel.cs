@@ -31,22 +31,48 @@ namespace SimplePhotoEditor.ViewModels
         private bool isSaving = false;
         private bool focusOnFileName;
         private DateTime dateTaken;
-        private ObservableCollection<string> tags;
+        private string selectedTag;
+        private ObservableCollection<string> tags = new ObservableCollection<string>();
         private string tag;
         private ICommand saveCommand;
         private ICommand saveNextCommand;
         private ICommand cancelCommand;
+        private ICommand addTagCommand;
+        private ICommand removeTagCommand;
 
         public ICommand CancelCommand => cancelCommand ?? (cancelCommand = new DelegateCommand(GetMetadata));
         public ICommand SaveCommand => saveCommand ?? (saveCommand = new DelegateCommand<string>(OnSave));
         public ICommand SaveNextCommand => saveNextCommand ?? (saveNextCommand = new DelegateCommand<string>(OnSave));
+        public ICommand AddTagCommand => addTagCommand ?? (addTagCommand = new DelegateCommand(AddTag));
+        public ICommand RemoveTagCommand => removeTagCommand ?? (removeTagCommand = new DelegateCommand(RemoveTag));
         public bool FocusOnFileName { get => focusOnFileName; set => SetProperty(ref focusOnFileName, value); }
+        public string SelectedTag { get => selectedTag; set
+            {
+                SetProperty(ref selectedTag, value);
+                Tag = SelectedTag;
+            }
+        }
 
         public MetadataViewModel(IRegionManager regionManager)
         {
             this.regionManager = regionManager;
         }
 
+        public void AddTag()
+        {
+            if (Tags?.Contains(Tag) != true)
+            {
+                Tags.Add(Tag);
+            }
+        }
+
+        public void RemoveTag()
+        {
+            if (Tags?.Contains(Tag) == true)
+            {
+                Tags.Remove(tag);
+            }
+        }
         private void UpdateThumbnailDetails(ThumbnailViewModel thumbnailVM)
         {
             var currentImageIndex = thumbnailVM.Images.IndexOf(thumbnailVM.SelectedImage);
@@ -119,12 +145,15 @@ namespace SimplePhotoEditor.ViewModels
             {
                 shellFile.Properties.System.Photo.DateTaken.Value = DateTaken;
             }
-            string[] tagsArray = null;
-            Tags?.CopyTo(tagsArray, 0);
-            if (tagsArray != shellFile.Properties.System.Photo.TagViewAggregate.Value)
-            {
-                shellFile.Properties.System.Photo.TagViewAggregate.Value = tagsArray;
-            }
+            //if (Tags?.Count > 0)
+            //{
+            //    string[] tagsArray = new string[Tags.Count];
+            //    Tags?.CopyTo(tagsArray, 0);
+            //    if (tagsArray != shellFile.Properties.System.Photo.TagViewAggregate.Value && tagsArray?.Length > 0)
+            //    {
+            //        shellFile.Properties.System.Photo.TagViewAggregate.Value = tagsArray;
+            //    }
+            //}
             shellFile.Dispose();
 
 
