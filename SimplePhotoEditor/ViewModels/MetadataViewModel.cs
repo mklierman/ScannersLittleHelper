@@ -27,31 +27,37 @@ namespace SimplePhotoEditor.ViewModels
         private string fileName;
         private string title;
         private string subject;
-        private string comments;
+        private string comment;
         private bool isSaving = false;
+        private bool focusOnFileName;
         private DateTime dateTaken;
         private ObservableCollection<string> tags;
         private string tag;
-        private CompositeCommand SaveAndNextCompositeCommand;
         private ICommand saveCommand;
         private ICommand saveNextCommand;
         private ICommand cancelCommand;
 
         public ICommand CancelCommand => cancelCommand ?? (cancelCommand = new DelegateCommand(GetMetadata));
-        public ICommand SaveCommand => saveCommand ?? (saveCommand = new DelegateCommand(OnSave));
-        public ICommand SaveNextCommand => saveNextCommand ?? (saveNextCommand = new DelegateCommand(OnSaveAndNext));
+        public ICommand SaveCommand => saveCommand ?? (saveCommand = new DelegateCommand<string>(OnSave));
+        public ICommand SaveNextCommand => saveNextCommand ?? (saveNextCommand = new DelegateCommand<string>(OnSave));
+        public bool FocusOnFileName { get => focusOnFileName; set => SetProperty(ref focusOnFileName, value); }
 
         public MetadataViewModel(IRegionManager regionManager)
         {
             this.regionManager = regionManager;
         }
 
-        private async void OnSaveAndNext()
+        private void UpdateThumbnailDetails(ThumbnailViewModel thumbnailVM)
         {
-            await SaveImage();
-            var thumbnailView = (ThumbnailPage)regionManager.Regions[Regions.Main].GetView(PageKeys.Thumbnail);
-            var thumbnailVM = (ThumbnailViewModel)thumbnailView.DataContext;
-            thumbnailVM.SelectNextImage();
+            var currentImageIndex = thumbnailVM.Images.IndexOf(thumbnailVM.SelectedImage);
+            thumbnailVM.Images[currentImageIndex].FileName = FileName;
+            thumbnailVM.Images[currentImageIndex].FilePath = FilePath;
+            thumbnailVM.Images[currentImageIndex].MetaDataModified =
+                    !string.IsNullOrEmpty(Title) ||
+                    !string.IsNullOrEmpty(Subject) ||
+                    !string.IsNullOrEmpty(Comment) ||
+                    DateTaken != default ||
+                    Tags?.Count > 0;
         }
 
         private void GetMetadata()
@@ -60,7 +66,7 @@ namespace SimplePhotoEditor.ViewModels
             FileName = Path.GetFileNameWithoutExtension(FilePath);
             Title = shellFile.Properties.System.Title.Value;
             Subject = shellFile.Properties.System.Subject.Value;
-            Comments = shellFile.Properties.System.Comment.Value;
+            Comment = shellFile.Properties.System.Comment.Value;
             DateTaken = Convert.ToDateTime(shellFile.Properties.System.Photo.DateTaken.Value);
             string[] tagsArray = shellFile.Properties.System.Photo.TagViewAggregate.Value;
             if (tagsArray != null)
@@ -70,12 +76,27 @@ namespace SimplePhotoEditor.ViewModels
         }
 
         public bool IsSaving { get => isSaving; set => SetProperty(ref isSaving, value); }
-
-        private async void OnSave()
+        private async void OnSave(string GoToNextImage = "")
         {
             IsSaving = true;
             await Task.Run(async () => await SaveImage());
+            if (ThumbnailViewModel == null)
+            {
+                GetThumbnailViewModel();
+            }
+            UpdateThumbnailDetails(ThumbnailViewModel);
+            if (string.Equals(GoToNextImage, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                ThumbnailViewModel.SelectNextImage();
+            }
             IsSaving = false;
+
+        }
+
+        private void GetThumbnailViewModel()
+        {
+            var thumbnailView = (ThumbnailPage)regionManager.Regions[Regions.Main].GetView(PageKeys.Thumbnail);
+            ThumbnailViewModel = (ThumbnailViewModel)thumbnailView.DataContext;
         }
 
         private async Task SaveImage()
@@ -90,9 +111,9 @@ namespace SimplePhotoEditor.ViewModels
             {
                 shellFile.Properties.System.Subject.Value = Subject;
             }
-            if (Comments != shellFile.Properties.System.Comment.Value)
+            if (Comment != shellFile.Properties.System.Comment.Value)
             {
-                shellFile.Properties.System.Comment.Value = Comments;
+                shellFile.Properties.System.Comment.Value = Comment;
             }
             if (DateTaken != Convert.ToDateTime(shellFile.Properties.System.Photo.DateTaken.Value))
             {
@@ -109,7 +130,16 @@ namespace SimplePhotoEditor.ViewModels
 
             if (FileName != Path.GetFileNameWithoutExtension(FilePath))
             {
-                File.Move(FilePath, Path.GetDirectoryName(FilePath) + "\\" + FileName + Path.GetExtension(FilePath));
+                var newPath = Path.GetDirectoryName(FilePath) + "\\" + FileName + Path.GetExtension(FilePath);
+                File.Move(FilePath, newPath);
+                if (File.Exists(newPath))
+                {
+                    FilePath = newPath;
+                }
+                else
+                {
+                    //Something went wrong.
+                }
             }
         }
 
@@ -121,7 +151,10 @@ namespace SimplePhotoEditor.ViewModels
                 if (filePath != value)
                 {
                     filePath = value;
-                    GetMetadata();
+                    if (value != null)
+                    {
+                        GetMetadata();
+                    }
                     RaisePropertyChanged(nameof(FilePath));
                 }
             }
@@ -166,15 +199,15 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        public string Comments
+        public string Comment
         {
-            get => comments;
+            get => comment;
             set
             {
-                if (comments != value)
+                if (comment != value)
                 {
-                    comments = value;
-                    RaisePropertyChanged(nameof(Comments));
+                    comment = value;
+                    RaisePropertyChanged(nameof(Comment));
                 }
             }
         }

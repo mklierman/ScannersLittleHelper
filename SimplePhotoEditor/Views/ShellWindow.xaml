@@ -14,7 +14,7 @@
     mc:Ignorable="d"
     MinWidth="500"
     MinHeight="350"
-    Title="{x:Static properties:Resources.AppDisplayName}" Closing="MetroWindow_Closing" Initialized="MetroWindow_Initialized" SizeChanged="MetroWindow_SizeChanged">
+    Title="{x:Static properties:Resources.AppDisplayName}" Closing="MetroWindow_Closing" Initialized="MetroWindow_Initialized" SizeChanged="MetroWindow_SizeChanged" Loaded="MetroWindow_Loaded">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Loaded">
             <i:InvokeCommandAction Command="{Binding LoadedCommand}" />

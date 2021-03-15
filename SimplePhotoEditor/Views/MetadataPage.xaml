@@ -11,6 +11,7 @@
     d:DataContext="{d:DesignInstance Type=viewmodels:MetadataViewModel}"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    xmlns:exts="clr-namespace:SimplePhotoEditor.Helpers"
     prism:ViewModelLocator.AutoWireViewModel="True"
     Style="{StaticResource BaseUserControlStyle}"
     mc:Ignorable="d">
@@ -46,6 +47,7 @@
             <TextBox
                 Grid.Row="0"
                 Grid.Column="1"
+                exts:FocusExtension.IsFocused="{Binding FocusOnFileName}"
                 Margin="{StaticResource GridMargin}"
                 Text="{Binding FileName, Mode=TwoWay}" />
             <Label
@@ -151,6 +153,7 @@
             <Button
                 Grid.Column="2"
                 Command="{Binding SaveNextCommand}"
+                CommandParameter="true"
                 Content="Save and Next" />
         </Grid>
     </Grid>

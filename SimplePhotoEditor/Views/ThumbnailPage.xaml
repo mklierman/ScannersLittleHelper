@@ -9,13 +9,14 @@
     xmlns:properties="clr-namespace:SimplePhotoEditor.Properties"
     xmlns:viewmodels="clr-namespace:SimplePhotoEditor.ViewModels"
     xmlns:views="clr-namespace:SimplePhotoEditor.Views"
+    x:Name="Thumbnail"
     d:DataContext="{d:DesignInstance Type=viewmodels:ThumbnailViewModel}"
     d:DesignHeight="450"
     d:DesignWidth="800"
-    x:Name="Thumbnail"
     prism:ViewModelLocator.AutoWireViewModel="True"
+    Initialized="UserControl_Initialized"
     Style="{StaticResource BaseUserControlStyle}"
-    mc:Ignorable="d" Initialized="UserControl_Initialized">
+    mc:Ignorable="d">
     <UserControl.Resources>
         <cvtr:BoolToColorConverter x:Key="BoolToColorConverter" />
     </UserControl.Resources>
