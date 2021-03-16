@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAPICodePack.Shell;
+﻿using MahApps.Metro.Controls.Dialogs;
+using Microsoft.WindowsAPICodePack.Shell;
 using Newtonsoft.Json.Linq;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -26,6 +27,7 @@ namespace SimplePhotoEditor.ViewModels
         private string filePath;
         private string fileName;
         private string title;
+        private IDialogCoordinator dialogCoordinator = new DialogCoordinator();
         private string subject;
         private string comment;
         private bool isSaving = false;
@@ -183,6 +185,10 @@ namespace SimplePhotoEditor.ViewModels
                     if (value != null)
                     {
                         GetMetadata();
+                        if (string.IsNullOrEmpty(SaveToRootFolder))
+                        {
+                            GetSaveToFolderOptions();
+                        }
                     }
                     RaisePropertyChanged(nameof(FilePath));
                 }
@@ -278,6 +284,75 @@ namespace SimplePhotoEditor.ViewModels
                     RaisePropertyChanged(nameof(Tag));
                 }
             }
+        }
+
+        private ObservableCollection<string> saveToFolderOptions = new ObservableCollection<string>();
+
+        public ObservableCollection<string> SaveToFolderOptions { get => saveToFolderOptions; set => SetProperty(ref saveToFolderOptions, value); }
+
+        private string selectedSaveToFolder;
+
+        public string SelectedSaveToFolder
+        {
+            get => selectedSaveToFolder; set
+            {
+                SetProperty(ref selectedSaveToFolder, value);
+                if (string.Equals(value, "[Create New Directory]", StringComparison.OrdinalIgnoreCase))
+                {
+                    //New popup
+                    var newDirName = dialogCoordinator.ShowModalInputExternal(this, "Create New Directory", "Enter the new directory name:");
+                    if (!string.IsNullOrEmpty(newDirName))
+                    {
+                        DirectoryInfo directoryInfo = new DirectoryInfo(SaveToRootFolder);
+                        var newPath = directoryInfo.CreateSubdirectory(newDirName).FullName;
+                        SaveToFolderOptions.Add(newPath);
+                        SelectedSaveToFolder = newPath;
+                    }
+                }
+            }
+        }
+
+        private ICommand changeRootFolderCommand;
+        public ICommand ChangeRootFolderCommand => changeRootFolderCommand ??= new DelegateCommand(ChangeRootFolder);
+
+        private string saveToRootFolder;
+        public string SaveToRootFolder { get => saveToRootFolder; set => SetProperty(ref saveToRootFolder, value); }
+
+        private void ChangeRootFolder()
+        {
+            var folderBrowser = new System.Windows.Forms.FolderBrowserDialog
+            {
+                ShowNewFolderButton = true,
+                RootFolder = Environment.SpecialFolder.MyComputer
+            };
+            if (folderBrowser.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                SaveToRootFolder = folderBrowser.SelectedPath;
+                GetSaveToFolderOptions(SaveToRootFolder);
+            }
+        }
+
+        private void GetSaveToFolderOptions(string rootFolder = "")
+        {
+            SaveToFolderOptions.Clear();
+            DirectoryInfo directoryInfo;
+            if (rootFolder == string.Empty)
+            {
+                directoryInfo = new DirectoryInfo(Path.GetDirectoryName(FilePath));
+            }
+            else
+            {
+                directoryInfo = new DirectoryInfo(rootFolder);
+            }
+            
+            SaveToFolderOptions.Add(directoryInfo.FullName);
+            var dirs = directoryInfo.GetDirectories();
+            foreach (DirectoryInfo dir in dirs)
+            {
+                SaveToFolderOptions.Add(dir.FullName);
+            }
+            SaveToFolderOptions.Add("[Create New Directory]");
+            SelectedSaveToFolder = directoryInfo.FullName;
         }
     }
 }

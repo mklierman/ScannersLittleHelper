@@ -36,6 +36,7 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="5" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid Grid.Column="0">
@@ -92,7 +93,7 @@
                         Grid.Row="2"
                         ItemsSource="{Binding Images}"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                        SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Single">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel
@@ -120,7 +121,8 @@
                         </ListView.ItemsPanel>
                     </ListView>
                 </Grid>
-                <Grid Grid.Column="1">
+                <GridSplitter Grid.Column="1"/>
+                <Grid Grid.Column="2">
                     <views:MetadataPage DataContext="{Binding MetaDataViewModel}" />
                 </Grid>
             </Grid>
