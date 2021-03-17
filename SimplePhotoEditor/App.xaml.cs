@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-
+using MahApps.Metro.Controls.Dialogs;
 using Microsoft.Extensions.Configuration;
 
 using Prism.Ioc;
@@ -95,6 +95,8 @@ namespace SimplePhotoEditor
             // Register configurations to IoC
             containerRegistry.RegisterInstance<IConfiguration>(configuration);
             containerRegistry.RegisterInstance<AppConfig>(appConfig);
+
+            containerRegistry.RegisterDialog<NewFolderDialog, NewFolderDialogViewModel>("InputDialog");
         }
 
         private IConfiguration BuildConfiguration()

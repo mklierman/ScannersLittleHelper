@@ -81,13 +81,13 @@
                 Grid.Column="0"
                 Margin="{StaticResource GridMargin}"
                 HorizontalAlignment="Right"
-                Content="Comments:" />
+                Content="Comment:" />
             <TextBox
                 Grid.Row="3"
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 TabIndex="103"
-                Text="{Binding Comments, Mode=TwoWay}" />
+                Text="{Binding Comment, Mode=TwoWay}" />
             <Label
                 Grid.Row="4"
                 Grid.Column="0"

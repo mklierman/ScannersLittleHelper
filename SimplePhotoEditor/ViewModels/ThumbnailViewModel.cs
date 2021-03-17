@@ -23,6 +23,7 @@ using SimplePhotoEditor.Constants;
 using System.Collections.Generic;
 using System.Windows.Controls;
 using SimplePhotoEditor.Helpers;
+using Prism.Services.Dialogs;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -37,6 +38,7 @@ namespace SimplePhotoEditor.ViewModels
         private string selectedSortAscDesc = "Asc";
         private ICommand refreshCommand;
         private IRegionManager RegionManager;
+        private IDialogService DialogService;
         private ICommand folderBrowseCommand;
         private AsyncObservableCollection<Thumbnail> images = new AsyncObservableCollection<Thumbnail>();
         private MetadataViewModel metadataViewModel;
@@ -55,7 +57,6 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
         public ICommand RefreshCommand => refreshCommand ??= new DelegateCommand(RefreshImageList);
-        private ICommand NextImageCommand => new DelegateCommand(SelectNextImage);
 
         private void RefreshImageList()
         {
@@ -111,8 +112,9 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        public ThumbnailViewModel(IRegionManager regionManager)
+        public ThumbnailViewModel(IRegionManager regionManager, IDialogService dialogService)
         {
+            DialogService = dialogService;
             RegionManager = regionManager;
             if (App.Current.Properties.Contains("LastThumbnailFolder"))
             {
@@ -138,7 +140,7 @@ namespace SimplePhotoEditor.ViewModels
                 SetProperty(ref selectedImage, value);
                 if (MetaDataViewModel == null)
                 {
-                    MetaDataViewModel = new MetadataViewModel(RegionManager);
+                    MetaDataViewModel = new MetadataViewModel(RegionManager, DialogService, PageKeys.Thumbnail);
                 }
                 MetaDataViewModel.FilePath = value?.FilePath;
             }
@@ -168,12 +170,11 @@ namespace SimplePhotoEditor.ViewModels
             return retval;
         }
 
-        public void SelectNextImage()
+        public void SelectNextImage(int nextImageIndex)
         {
-            var currentImageIndex = Images.IndexOf(SelectedImage);
-            if (currentImageIndex < Images.Count)
+            if (nextImageIndex < Images.Count)
             {
-                SelectedImage = Images[currentImageIndex + 1];
+                SelectedImage = Images[nextImageIndex];
             }
         }
 
@@ -221,6 +222,14 @@ namespace SimplePhotoEditor.ViewModels
         private void ImageSelected()
         {
             metadataViewModel.FilePath = FilePath;
+        }
+
+        public  void RemoveIfMoved(string fileName, string saveDirectory)
+        {
+            if (CurrentFolder != saveDirectory && Images.Where(i => i.FileName == fileName).Any())
+            {
+                Images.Remove(Images.Where(i => i.FileName == fileName).FirstOrDefault());
+            }
         }
     }
 }

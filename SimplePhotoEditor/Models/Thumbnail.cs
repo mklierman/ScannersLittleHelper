@@ -1,8 +1,5 @@
 ﻿using Prism.Mvvm;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
 using System.Windows.Media.Imaging;
 
 namespace SimplePhotoEditor.Models
@@ -26,6 +23,5 @@ namespace SimplePhotoEditor.Models
 
         private string filePath;
         public string FilePath { get => filePath; set => SetProperty(ref filePath, value); }
-
     }
 }
