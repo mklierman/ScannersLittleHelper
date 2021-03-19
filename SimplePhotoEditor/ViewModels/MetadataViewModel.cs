@@ -7,12 +7,11 @@ using Prism.Regions;
 using Prism.Services.Dialogs;
 using SimplePhotoEditor.Constants;
 using SimplePhotoEditor.Helpers;
+using SimplePhotoEditor.Models;
 using SimplePhotoEditor.Views;
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -20,33 +19,34 @@ namespace SimplePhotoEditor.ViewModels
 {
     public class MetadataViewModel : BindableBase
     {
+        private bool creatingNewDir = false;
+        private bool focusOnFileName;
+        private bool isSaving = false;
+        private DateTime dateTaken;
         private ICommand addTagCommand;
         private ICommand cancelCommand;
         private ICommand changeRootFolderCommand;
-        private string comment;
-        private bool creatingNewDir = false;
-        private DateTime dateTaken;
-        private IDialogCoordinator dialogCoordinator = new DialogCoordinator();
-        private IDialogService DialogService;
-        private string fileName;
-        private string filePath;
-        private bool focusOnFileName;
-        private bool isSaving = false;
-        private IRegionManager regionManager;
         private ICommand removeTagCommand;
         private ICommand saveCommand;
         private ICommand saveNextCommand;
+        private IDialogCoordinator dialogCoordinator = new DialogCoordinator();
+        private IDialogService DialogService;
+        private IRegionManager regionManager;
         private ObservableCollection<string> saveToFolderOptions = new ObservableCollection<string>();
+        private ObservableCollection<string> tags = new ObservableCollection<string>();
+        private SingleImageViewModel SingleImageViewModel;
+        private string CallingPage;
+        private string comment;
+        private string fileName;
+        private string filePath;
         private string saveToRootFolder;
         private string selectedSaveToFolder;
         private string selectedTag;
-        private SingleImageViewModel SingleImageViewModel;
         private string subject;
         private string tag;
-        private string CallingPage;
-        private ObservableCollection<string> tags = new ObservableCollection<string>();
-        private ThumbnailViewModel ThumbnailViewModel;
         private string title;
+        private ThumbnailViewModel ThumbnailViewModel;
+
         public MetadataViewModel(IRegionManager regionManager, IDialogService dialogService, string callingPage = "")
         {
             this.regionManager = regionManager;
@@ -57,6 +57,7 @@ namespace SimplePhotoEditor.ViewModels
         public ICommand AddTagCommand => addTagCommand ?? (addTagCommand = new DelegateCommand(AddTag));
         public ICommand CancelCommand => cancelCommand ?? (cancelCommand = new DelegateCommand(GetMetadata));
         public ICommand ChangeRootFolderCommand => changeRootFolderCommand ??= new DelegateCommand(ChangeRootFolder);
+
         public string Comment
         {
             get => comment;
@@ -73,27 +74,13 @@ namespace SimplePhotoEditor.ViewModels
         public DateTime DateTaken
         {
             get => dateTaken;
-            set
-            {
-                if (dateTaken != value)
-                {
-                    dateTaken = value;
-                    RaisePropertyChanged(nameof(DateTaken));
-                }
-            }
+            set => SetProperty(ref dateTaken, value);
         }
 
         public string FileName
         {
             get => fileName;
-            set
-            {
-                if (fileName != value)
-                {
-                    fileName = value;
-                    RaisePropertyChanged(nameof(FileName));
-                }
-            }
+            set => SetProperty(ref fileName, value);
         }
 
         public string FilePath
@@ -152,6 +139,7 @@ namespace SimplePhotoEditor.ViewModels
                 Tag = SelectedTag;
             }
         }
+
         public string Subject
         {
             get => subject;
@@ -330,13 +318,13 @@ namespace SimplePhotoEditor.ViewModels
 
         private async void OnSave(string GoToNextImage = "")
         {
-            MetadataViewModel dataToSave = new MetadataViewModel(regionManager, DialogService);
+            ImageInfo dataToSave = new ImageInfo();
             dataToSave.SelectedSaveToFolder = SelectedSaveToFolder;
             dataToSave.DateTaken = DateTaken;
             dataToSave.Comment = Comment;
             dataToSave.FileName = FileName;
             dataToSave.FilePath = FilePath;
-            dataToSave.SelectedSaveToFolder = SelectedSaveToFolder;
+            dataToSave.NewFilePath = SelectedSaveToFolder + "\\" + FileName + Path.GetExtension(FilePath);
             dataToSave.Subject = Subject;
             dataToSave.Tags = Tags;
             dataToSave.Title = Title;
@@ -353,14 +341,13 @@ namespace SimplePhotoEditor.ViewModels
             }
             else if (CallingPage == PageKeys.SingleImage)
             {
-                
                 if (string.Equals(GoToNextImage, "true", StringComparison.OrdinalIgnoreCase))
                 {
                     if (SingleImageViewModel == null)
                     {
                         GetSingleImageViewModel();
                     }
-                    SingleImageViewModel.SelectNextImage();
+                    UpdateSingleImageDetails(SingleImageViewModel, GoToNextImage, dataToSave);
                 }
             }
             IsSaving = false;
@@ -383,7 +370,7 @@ namespace SimplePhotoEditor.ViewModels
             SaveToFolderOptions.Add(newDir);
         }
 
-        private async Task SaveImage(MetadataViewModel data)
+        private async Task SaveImage(ImageInfo data)
         {
             ShellFile shellFile = ShellFile.FromFilePath(data.FilePath);
 
@@ -429,7 +416,7 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        private void UpdateThumbnailDetails(ThumbnailViewModel thumbnailVM, string GoToNextImage, MetadataViewModel data)
+        private void UpdateThumbnailDetails(ThumbnailViewModel thumbnailVM, string GoToNextImage, ImageInfo data)
         {
             var currentImageIndex = thumbnailVM.Images.IndexOf(thumbnailVM.SelectedImage);
             if (thumbnailVM.CurrentFolder != data.SelectedSaveToFolder)
@@ -440,7 +427,7 @@ namespace SimplePhotoEditor.ViewModels
             else
             {
                 thumbnailVM.Images[currentImageIndex].FileName = data.FileName;
-                thumbnailVM.Images[currentImageIndex].FilePath = data.FilePath;
+                thumbnailVM.Images[currentImageIndex].FilePath = data.NewFilePath;
                 thumbnailVM.Images[currentImageIndex].MetaDataModified =
                         !string.IsNullOrEmpty(data.Title) ||
                         !string.IsNullOrEmpty(data.Subject) ||
@@ -450,8 +437,16 @@ namespace SimplePhotoEditor.ViewModels
 
                 if (string.Equals(GoToNextImage, "true", StringComparison.OrdinalIgnoreCase))
                 {
-                    thumbnailVM.SelectNextImage(currentImageIndex+1);
+                    thumbnailVM.SelectNextImage(currentImageIndex + 1);
                 }
+            }
+        }
+
+        private void UpdateSingleImageDetails(SingleImageViewModel singleImageViewModel, string GoToNextImage, ImageInfo data)
+        {
+            if (ThumbnailViewModel == null)
+            {
+                GetThumbnailViewModel();
             }
 
         }

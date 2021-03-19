@@ -41,8 +41,8 @@ namespace SimplePhotoEditor.ViewModels
         // TODO WTS: Change the icons and titles for all HamburgerMenuItems here.
         public ObservableCollection<HamburgerMenuItem> MenuItems { get; } = new ObservableCollection<HamburgerMenuItem>()
         {
-            new HamburgerMenuGlyphItem() { Label = Resources.ShellSingleImagePage, Glyph = "\uE130", Tag = PageKeys.SingleImage },
             new HamburgerMenuGlyphItem() { Label = Resources.ShellThumbnailPage, Glyph = "\uF0E2", Tag = PageKeys.Thumbnail },
+            new HamburgerMenuGlyphItem() { Label = Resources.ShellSingleImagePage, Glyph = "\uE130", Tag = PageKeys.SingleImage },
         };
 
         public ObservableCollection<HamburgerMenuItem> OptionMenuItems { get; } = new ObservableCollection<HamburgerMenuItem>()

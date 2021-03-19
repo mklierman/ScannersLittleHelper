@@ -6,8 +6,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:prism="http://prismlibrary.com/"
     xmlns:properties="clr-namespace:SimplePhotoEditor.Properties"
+    xmlns:viewmodels="clr-namespace:SimplePhotoEditor.ViewModels"
     xmlns:views="clr-namespace:SimplePhotoEditor.Views"
     x:Name="SingleImage"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SingleImageViewModel}"
     d:DesignHeight="450"
     d:DesignWidth="800"
     prism:ViewModelLocator.AutoWireViewModel="True"
@@ -21,36 +23,36 @@
         <TextBlock
             Margin="{StaticResource MediumLeftMargin}"
             Style="{StaticResource PageTitleStyle}"
-            Text="{x:Static properties:Resources.SingleImagePageTitle}" />
+            Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         <Grid
             Grid.Row="1"
             Margin="{StaticResource MediumLeftRightMargin}"
             Background="{DynamicResource MahApps.Brushes.Gray10}">
-            <!--
-                The Mahapps Gray10 color represents where you should place your content.
-                Place your content here.
-            -->
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="5*" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="30" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="8*" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="30" />
                         </Grid.ColumnDefinitions>
                         <Button
                             Grid.Column="0"
-                            Height="40"
+                            Command="{Binding PreviousImageCommand}"
+                            Padding="0,0,0,0"
                             ToolTip="Previous Image">
                             <TextBlock
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
                                 FontFamily="Segoe MDL2 Assets"
                                 FontSize="24"
                                 Text="&#xEDD9;" />
@@ -67,9 +69,12 @@
                         </Grid>
                         <Button
                             Grid.Column="2"
-                            Height="40"
+                            Command="{Binding NextImageCommand}"
+                            Padding="0,0,0,0"
                             ToolTip="Next Image">
                             <TextBlock
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
                                 FontFamily="Segoe MDL2 Assets"
                                 FontSize="24"
                                 Text="&#xEDDA;" />
@@ -161,77 +166,9 @@
                     </Grid>
                 </Grid>
             </Grid>
-            <Grid Grid.Column="1" Margin="{StaticResource SmallLeftMargin}">
+            <GridSplitter Grid.Column="1" Width="5" />
+            <Grid Grid.Column="2" Margin="{StaticResource SmallLeftMargin}">
                 <views:MetadataPage DataContext="{Binding MetaDataViewModel}" />
-                <!--<Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="5*" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <StackPanel>
-                        <DockPanel>
-                            <Label Content="File Name:" />
-                            <TextBox Text="{Binding FileName, Mode=TwoWay}" />
-                        </DockPanel>
-                        <DockPanel Margin="{StaticResource XSmallTopMargin}">
-                            <Label Content="Title:" />
-                            <TextBox Text="{Binding Title, Mode=TwoWay}" />
-                        </DockPanel>
-                        <DockPanel Margin="{StaticResource XSmallTopMargin}">
-                            <Label Content="Subject:" />
-                            <TextBox Text="{Binding Subject, Mode=TwoWay}" />
-                        </DockPanel>
-                        <DockPanel Margin="{StaticResource XSmallTopMargin}">
-                            <Label Content="Comments:" />
-                            <TextBox Text="{Binding Comments, Mode=TwoWay}" />
-                        </DockPanel>
-                        <DockPanel Margin="{StaticResource XSmallTopMargin}">
-                            <Label Content="Date Taken:" />
-                            <DatePicker Text="{Binding DateTaken, Mode=TwoWay}" />
-                        </DockPanel>
-                        <DockPanel Margin="{StaticResource XSmallTopMargin}">
-                            <Label Content="Tags:" />
-                            <ListBox ItemsSource="{Binding Tags, Mode=TwoWay}" />
-                        </DockPanel>
-                        <Grid Margin="{StaticResource XSmallTopMargin}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="6*" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBox
-                                Grid.Column="0"
-                                Margin="80,0,0,0"
-                                Text="{Binding Tag, Mode=TwoWay}" />
-                            <Button Grid.Column="1">
-                                <TextBlock
-                                    FontFamily="Segoe MDL2 Assets"
-                                    FontSize="14"
-                                    Text="&#xE109;" />
-                            </Button>
-                            <Button Grid.Column="2">
-                                <TextBlock
-                                    FontFamily="Segoe MDL2 Assets"
-                                    FontSize="14"
-                                    Text="&#xE108;" />
-                            </Button>
-                        </Grid>
-                    </StackPanel>
-
-                    <Grid Grid.Row="1" Height="60">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="Cancel" />
-                        <Button
-                            Grid.Column="1"
-                            Command="{Binding SaveCommand}"
-                            Content="Save" />
-                        <Button Grid.Column="2" Content="Save and Next" />
-                    </Grid>
-                </Grid>-->
             </Grid>
         </Grid>
     </Grid>
