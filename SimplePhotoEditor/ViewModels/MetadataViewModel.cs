@@ -35,7 +35,7 @@ namespace SimplePhotoEditor.ViewModels
         private ObservableCollection<string> saveToFolderOptions = new ObservableCollection<string>();
         private ObservableCollection<string> tags = new ObservableCollection<string>();
         private SingleImageViewModel SingleImageViewModel;
-        private string CallingPage;
+        private string callingPage;
         private string comment;
         private string fileName;
         private string filePath;
@@ -106,6 +106,8 @@ namespace SimplePhotoEditor.ViewModels
 
         public bool FocusOnFileName { get => focusOnFileName; set => SetProperty(ref focusOnFileName, value); }
         public bool IsSaving { get => isSaving; set => SetProperty(ref isSaving, value); }
+
+        public string CallingPage { get => callingPage; set => SetProperty(ref callingPage, value); }
         public ICommand RemoveTagCommand => removeTagCommand ?? (removeTagCommand = new DelegateCommand(RemoveTag));
         public ICommand SaveCommand => saveCommand ?? (saveCommand = new DelegateCommand<string>(OnSave));
         public ICommand SaveNextCommand => saveNextCommand ?? (saveNextCommand = new DelegateCommand<string>(OnSave));
@@ -322,7 +324,7 @@ namespace SimplePhotoEditor.ViewModels
             dataToSave.SelectedSaveToFolder = SelectedSaveToFolder;
             dataToSave.DateTaken = DateTaken;
             dataToSave.Comment = Comment;
-            dataToSave.FileName = FileName;
+            dataToSave.FileName = FileName + Path.GetExtension(FilePath);
             dataToSave.FilePath = FilePath;
             dataToSave.NewFilePath = SelectedSaveToFolder + "\\" + FileName + Path.GetExtension(FilePath);
             dataToSave.Subject = Subject;
@@ -331,15 +333,9 @@ namespace SimplePhotoEditor.ViewModels
 
             IsSaving = true;
             _ = Task.Run(async () => await SaveImage(dataToSave));
-            if (CallingPage == PageKeys.Thumbnail)
-            {
-                if (ThumbnailViewModel == null)
-                {
-                    GetThumbnailViewModel();
-                }
+                GetThumbnailViewModel();
                 UpdateThumbnailDetails(ThumbnailViewModel, GoToNextImage, dataToSave);
-            }
-            else if (CallingPage == PageKeys.SingleImage)
+            if (CallingPage == PageKeys.SingleImage)
             {
                 if (string.Equals(GoToNextImage, "true", StringComparison.OrdinalIgnoreCase))
                 {
@@ -401,9 +397,9 @@ namespace SimplePhotoEditor.ViewModels
             }
             shellFile.Dispose();
 
-            if (data.FileName != Path.GetFileNameWithoutExtension(data.FilePath) || Path.GetDirectoryName(data.FilePath) != data.SelectedSaveToFolder)
+            if (data.FileName != Path.GetFileName(data.FilePath) || Path.GetDirectoryName(data.FilePath) != data.SelectedSaveToFolder)
             {
-                var newPath = data.SelectedSaveToFolder + "\\" + data.FileName + Path.GetExtension(data.FilePath);
+                var newPath = data.SelectedSaveToFolder + "\\" + data.FileName;
                 File.Move(data.FilePath, newPath);
                 if (File.Exists(newPath))
                 {

@@ -29,7 +29,7 @@
             Margin="{StaticResource MediumLeftRightMargin}"
             Background="{DynamicResource MahApps.Brushes.Gray10}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -47,8 +47,9 @@
                         </Grid.ColumnDefinitions>
                         <Button
                             Grid.Column="0"
-                            Command="{Binding PreviousImageCommand}"
                             Padding="0,0,0,0"
+                            Command="{Binding PreviousImageCommand}"
+                            IsEnabled="{Binding PreviousImageEnabled, UpdateSourceTrigger=PropertyChanged}"
                             ToolTip="Previous Image">
                             <TextBlock
                                 HorizontalAlignment="Center"
@@ -69,8 +70,11 @@
                         </Grid>
                         <Button
                             Grid.Column="2"
-                            Command="{Binding NextImageCommand}"
+                            Width="30"
                             Padding="0,0,0,0"
+                            HorizontalAlignment="Right"
+                            Command="{Binding NextImageCommand}"
+                            IsEnabled="{Binding NextImageEnabled, UpdateSourceTrigger=PropertyChanged}"
                             ToolTip="Next Image">
                             <TextBlock
                                 HorizontalAlignment="Center"
@@ -166,8 +170,11 @@
                     </Grid>
                 </Grid>
             </Grid>
-            <GridSplitter Grid.Column="1" Width="5" />
-            <Grid Grid.Column="2" Margin="{StaticResource SmallLeftMargin}">
+            <GridSplitter
+                Grid.Column="1"
+                Width="5"
+                Margin="2,0,2,0" />
+            <Grid Grid.Column="2">
                 <views:MetadataPage DataContext="{Binding MetaDataViewModel}" />
             </Grid>
         </Grid>

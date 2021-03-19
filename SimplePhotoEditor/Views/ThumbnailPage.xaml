@@ -35,8 +35,8 @@
             Background="{DynamicResource MahApps.Brushes.Gray10}">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="5" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid Grid.Column="0">
@@ -91,7 +91,7 @@
                     </Grid>
                     <ListView
                         Grid.Row="2"
-                        ItemsSource="{Binding Images}"
+                        ItemsSource="{Binding Images, UpdateSourceTrigger=PropertyChanged}"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                         SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Single">
                         <ListView.ItemTemplate>
@@ -121,7 +121,7 @@
                         </ListView.ItemsPanel>
                     </ListView>
                 </Grid>
-                <GridSplitter Grid.Column="1"/>
+                <GridSplitter Grid.Column="1" Width="5" Margin="2,0,2,0"/>
                 <Grid Grid.Column="2">
                     <views:MetadataPage DataContext="{Binding MetaDataViewModel}" />
                 </Grid>

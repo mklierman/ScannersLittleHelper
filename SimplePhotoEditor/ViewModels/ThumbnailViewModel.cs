@@ -27,11 +27,10 @@ using Prism.Services.Dialogs;
 
 namespace SimplePhotoEditor.ViewModels
 {
-    public class ThumbnailViewModel : BindableBase
+    public class ThumbnailViewModel : BindableBase, INavigationAware
     {
         private string currentFolder;
         private string filePath;
-        private CompositeCommand SaveNextCompositeCommand = new CompositeCommand();
         private KeyValuePair<string, string>[] sortByOptions = SortOptions.SortByKeyValuePair;
         private string selectedSortBy = "FileName";
         private KeyValuePair<string, string>[] sortAscDescOptions = SortOptions.SortAscDescKeyValuePair;
@@ -116,14 +115,7 @@ namespace SimplePhotoEditor.ViewModels
         {
             DialogService = dialogService;
             RegionManager = regionManager;
-            if (App.Current.Properties.Contains("LastThumbnailFolder"))
-            {
-                CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
-                if (!string.IsNullOrEmpty(CurrentFolder))
-                {
-                    Task.Run(() => CreateThumbnails());
-                }
-            }
+            
         }
 
         public string CurrentFolder { get => currentFolder; set => SetProperty(ref currentFolder, value); }
@@ -142,6 +134,7 @@ namespace SimplePhotoEditor.ViewModels
                 {
                     MetaDataViewModel = new MetadataViewModel(RegionManager, DialogService, PageKeys.Thumbnail);
                 }
+                MetaDataViewModel.CallingPage = PageKeys.Thumbnail;
                 MetaDataViewModel.FilePath = value?.FilePath;
             }
         }
@@ -181,7 +174,13 @@ namespace SimplePhotoEditor.ViewModels
         private void CreateThumbnails()
         {
             DirectoryInfo folder = new DirectoryInfo(CurrentFolder);
-            foreach (FileInfo img in folder?.GetFiles("*.tif*").OrderBy(x => x.Name).ToArray())
+
+            string[] extensions = { ".tif", ".tiff", ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
+
+            FileInfo[] files = folder?.GetFiles("*.*")
+                .Where(f => extensions.Contains(f.Extension.ToLower())).ToArray();
+
+            foreach (FileInfo img in files?.OrderBy(x => x.Name).ToArray())
             {
                 ShellFile shellFile = ShellFile.FromFilePath(img.FullName);
 
@@ -230,6 +229,28 @@ namespace SimplePhotoEditor.ViewModels
             {
                 Images.Remove(Images.Where(i => i.FileName == fileName).FirstOrDefault());
             }
+        }
+
+        public void OnNavigatedTo(NavigationContext navigationContext)
+        {
+            if (App.Current.Properties.Contains("LastThumbnailFolder"))
+            {
+                CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
+                if (!string.IsNullOrEmpty(CurrentFolder))
+                {
+                    Task.Run(() => CreateThumbnails());
+                }
+            }
+        }
+
+        public bool IsNavigationTarget(NavigationContext navigationContext)
+        {
+            return true;
+        }
+
+        public void OnNavigatedFrom(NavigationContext navigationContext)
+        {
+            //throw new NotImplementedException();
         }
     }
 }

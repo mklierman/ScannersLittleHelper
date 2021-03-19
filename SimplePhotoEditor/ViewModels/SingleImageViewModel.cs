@@ -104,7 +104,24 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
-            FilePath = navigationContext.Parameters["FilePath"]?.ToString();
+            var parameter = navigationContext.Parameters["FilePath"]?.ToString();
+            if (parameter != null)
+            {
+                FilePath = parameter;
+            }
+            else
+            {
+                GetThumbnailViewModel();
+                FilePath = ThumbnailViewModel.SelectedImage.FilePath;
+            }
+            CheckThumbnailListPosition();
+        }
+
+        private void CheckThumbnailListPosition()
+        {
+            GetThumbnailViewModel();
+            NextImageEnabled = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) < ThumbnailViewModel.Images.Count - 1;
+            PreviousImageEnabled = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) > 0;
         }
 
         private string sortMode;
@@ -116,10 +133,15 @@ namespace SimplePhotoEditor.ViewModels
 
         private void GetThumbnailViewModel()
         {
-                var thumbnailView = (ThumbnailPage)RegionManager.Regions[Regions.Main].GetView(PageKeys.Thumbnail);
-                ThumbnailViewModel = (ThumbnailViewModel)thumbnailView.DataContext;
+            var thumbnailView = (ThumbnailPage)RegionManager.Regions[Regions.Main].GetView(PageKeys.Thumbnail);
+            ThumbnailViewModel = (ThumbnailViewModel)thumbnailView.DataContext;
         }
 
+        private bool previousImageEnabled = true;
+        private bool nextImageEnabled = true;
+
+        public bool PreviousImageEnabled { get => previousImageEnabled; set => SetProperty(ref previousImageEnabled, value); }
+        public bool NextImageEnabled { get => nextImageEnabled; set => SetProperty(ref nextImageEnabled, value); }
         public void SelectNextImage()
         {
             GetThumbnailViewModel();
@@ -129,6 +151,7 @@ namespace SimplePhotoEditor.ViewModels
                 FilePath = ThumbnailViewModel.Images[nextImageIndex].FilePath;
                 ThumbnailViewModel.SelectedImage = ThumbnailViewModel.Images[nextImageIndex];
             }
+            CheckThumbnailListPosition();
         }
 
         public void SelectPreviousImage()
@@ -140,6 +163,7 @@ namespace SimplePhotoEditor.ViewModels
                 FilePath = ThumbnailViewModel.Images[previousImageIndex].FilePath;
                 ThumbnailViewModel.SelectedImage = ThumbnailViewModel.Images[previousImageIndex];
             }
+            CheckThumbnailListPosition();
         }
 
         private void GetImagePreview()
@@ -160,6 +184,6 @@ namespace SimplePhotoEditor.ViewModels
             }
             metadataViewModel.FilePath = FilePath;
         }
-        
+
     }
 }
