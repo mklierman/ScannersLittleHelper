@@ -447,5 +447,9 @@ namespace SimplePhotoEditor.ViewModels
                 SingleImageViewModel.SelectNextImage();
             }
         }
+
+        private int maxFileNameLength;
+
+        public int MaxFileNameLength { get => maxFileNameLength; set => SetProperty(ref maxFileNameLength, value); }
     }
 }

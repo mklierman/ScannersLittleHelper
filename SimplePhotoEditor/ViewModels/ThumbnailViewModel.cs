@@ -134,7 +134,8 @@ namespace SimplePhotoEditor.ViewModels
         {
             DialogService = dialogService;
             RegionManager = regionManager;
-
+            object lockObj = new object();
+            BindingOperations.EnableCollectionSynchronization(Images, lockObj);
         }
 
         public string CurrentFolder { get => currentFolder; set => SetProperty(ref currentFolder, value); }
@@ -251,12 +252,15 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
-            if (App.Current.Properties.Contains("LastThumbnailFolder"))
+            if (string.IsNullOrEmpty(CurrentFolder))
             {
-                CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
-                if (!string.IsNullOrEmpty(CurrentFolder))
+                if (App.Current.Properties.Contains("LastThumbnailFolder"))
                 {
-                    Task.Run(() => CreateThumbnails());
+                    CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
+                    if (!string.IsNullOrEmpty(CurrentFolder))
+                    {
+                        Task.Run(() => CreateThumbnails());
+                    }
                 }
             }
         }

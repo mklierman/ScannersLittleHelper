@@ -65,6 +65,8 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 exts:FocusExtension.IsFocused="{Binding FocusOnFileName}"
+                MaxLength="{Binding MaxFileNameLength, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                MaxLines="1"
                 TabIndex="100"
                 Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
