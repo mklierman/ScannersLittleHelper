@@ -63,6 +63,25 @@ namespace SimplePhotoEditor.ViewModels
             Task.Run(() => CreateThumbnails());
         }
 
+        private void WatchForNewFiles()
+        {
+            FileSystemWatcher watcher = new FileSystemWatcher();
+            watcher.Path = CurrentFolder;
+            watcher.NotifyFilter = NotifyFilters.LastWrite;
+            watcher.IncludeSubdirectories = false;
+            foreach (var filter in Extensions.Images)
+            {
+                watcher.Filters.Add(filter);
+            }
+            watcher.Changed += FolderContentsChanged;
+            watcher.EnableRaisingEvents = true;
+        }
+
+        private void FolderContentsChanged(object sender, FileSystemEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
         private void OrderImageList()
         {
             var sortedList = new AsyncObservableCollection<Thumbnail>();
@@ -115,7 +134,7 @@ namespace SimplePhotoEditor.ViewModels
         {
             DialogService = dialogService;
             RegionManager = regionManager;
-            
+
         }
 
         public string CurrentFolder { get => currentFolder; set => SetProperty(ref currentFolder, value); }
@@ -138,6 +157,7 @@ namespace SimplePhotoEditor.ViewModels
                 MetaDataViewModel.FilePath = value?.FilePath;
             }
         }
+
 
         [System.Runtime.InteropServices.DllImport("gdi32.dll")]
         public static extern bool DeleteObject(IntPtr hObject);
@@ -175,10 +195,8 @@ namespace SimplePhotoEditor.ViewModels
         {
             DirectoryInfo folder = new DirectoryInfo(CurrentFolder);
 
-            string[] extensions = { ".tif", ".tiff", ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
-
             FileInfo[] files = folder?.GetFiles("*.*")
-                .Where(f => extensions.Contains(f.Extension.ToLower())).ToArray();
+                .Where(f => Extensions.Images.Contains(f.Extension.ToLower())).ToArray();
 
             foreach (FileInfo img in files?.OrderBy(x => x.Name).ToArray())
             {

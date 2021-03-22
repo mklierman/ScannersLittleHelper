@@ -1,4 +1,5 @@
-﻿using SimplePhotoEditor.ViewModels;
+﻿using SimplePhotoEditor.Helpers;
+using SimplePhotoEditor.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Composition;
@@ -28,7 +29,7 @@ namespace SimplePhotoEditor.Views
         [Import]
         public MetadataViewModel ViewModel
         {
-            set { this.DataContext = value; }
+            set { this.DataContext = value;      }
             get { return (MetadataViewModel)this.DataContext; }
         }
 
@@ -38,6 +39,16 @@ namespace SimplePhotoEditor.Views
             {
                 ViewModel.AddTag();
             }
+        }
+
+        public void FocusOnName()
+        {
+            FilenameTextbox.Focus();
+            FilenameTextbox.SelectAll();
+        }
+
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
         }
     }
 }

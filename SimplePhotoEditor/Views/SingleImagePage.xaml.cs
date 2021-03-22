@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.ComponentModel;
 using System.Composition;
 using Prism.Regions;
+using System.Windows;
 
 namespace SimplePhotoEditor.Views
 {
@@ -33,6 +34,11 @@ namespace SimplePhotoEditor.Views
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
             ViewModel.FilePath = navigationContext.Parameters["FilePath"].ToString();
+        }
+
+        private void CropButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            ViewModel.CropCommand.Execute(ImageElement);
         }
     }
 }

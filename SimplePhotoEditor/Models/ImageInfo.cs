@@ -6,7 +6,7 @@ namespace SimplePhotoEditor.Models
     public class ImageInfo
     {
         public string SelectedSaveToFolder;
-        public DateTime DateTaken;
+        public DateTime? DateTaken;
         public string Comment;
         public string FileName;
         public string FilePath;

@@ -5,6 +5,7 @@
     xmlns:converters="clr-namespace:SimplePhotoEditor.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:SimplePhotoEditor.Models"
     xmlns:prism="http://prismlibrary.com/"
@@ -73,7 +74,14 @@
                         </RadioButton>
                     </StackPanel>
                 </StackPanel>
+                <!--<StackPanel>
+                    <TextBlock Text="Thumbnail View Options" />
 
+                    <mah:ToggleSwitch IsEnabled="{Binding AutoRefreshThumbnails, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                        <mah:ToggleSwitch Header="ToggleSwitch" Height="100" Width="100"/>
+                    </mah:ToggleSwitch>
+
+                </StackPanel>-->
                 <TextBlock
                     Margin="{StaticResource SmallTopMargin}"
                     Style="{StaticResource SubtitleTextStyle}"

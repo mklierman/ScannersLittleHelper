@@ -4,10 +4,13 @@ using Prism.Mvvm;
 using Prism.Regions;
 using Prism.Services.Dialogs;
 using SimplePhotoEditor.Constants;
+using SimplePhotoEditor.Managers;
 using SimplePhotoEditor.Views;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -40,7 +43,7 @@ namespace SimplePhotoEditor.ViewModels
         }
 
         public ICommand AutoCropCommand => autoCropCommand ?? (autoCropCommand = new DelegateCommand(GetImagePreview));
-        public ICommand CropCommand => cropCommand ?? (cropCommand = new DelegateCommand(GetImagePreview));
+        public ICommand CropCommand => cropCommand ?? (cropCommand = new DelegateCommand<FrameworkElement>(StartCrop));
         public ICommand RotateLeftCommand => rotateLeftCommand ?? (rotateLeftCommand = new DelegateCommand(GetImagePreview));
         public ICommand RotateRightCommand => rotateRightCommand ?? (rotateRightCommand = new DelegateCommand(GetImagePreview));
         public ICommand SkewCommand => skewCommand ?? (skewCommand = new DelegateCommand(GetImagePreview));
@@ -73,7 +76,7 @@ namespace SimplePhotoEditor.ViewModels
                     {
                         GetImagePreview();
                         ImageSelected();
-                        FileName = Path.GetFileNameWithoutExtension(FilePath);
+                        FileName = Path.GetFileName(FilePath);
                     }
                 }
             }
@@ -183,6 +186,12 @@ namespace SimplePhotoEditor.ViewModels
                 MetaDataViewModel = new MetadataViewModel(RegionManager, DialogService, PageKeys.SingleImage);
             }
             metadataViewModel.FilePath = FilePath;
+        }
+
+        private CropManager cropper = new CropManager();
+        private void StartCrop(FrameworkElement frameworkElement)
+        {
+            cropper.AddCropToElement(frameworkElement);
         }
 
     }

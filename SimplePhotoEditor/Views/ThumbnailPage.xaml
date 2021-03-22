@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:cvtr="clr-namespace:SimplePhotoEditor.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:prism="http://prismlibrary.com/"
     xmlns:properties="clr-namespace:SimplePhotoEditor.Properties"
@@ -51,6 +52,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Label
                             Grid.Column="0"
@@ -91,9 +93,10 @@
                     </Grid>
                     <ListView
                         Grid.Row="2"
-                        ItemsSource="{Binding Images, UpdateSourceTrigger=PropertyChanged}"
+                        ItemsSource="{Binding Images, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                        SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Single">
+                        SelectedItem="{Binding SelectedImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        SelectionMode="Single">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel
@@ -121,9 +124,14 @@
                         </ListView.ItemsPanel>
                     </ListView>
                 </Grid>
-                <GridSplitter Grid.Column="1" Width="5" Margin="2,0,2,0"/>
+                <GridSplitter
+                    Grid.Column="1"
+                    Width="5"
+                    Margin="2,0,2,0" />
                 <Grid Grid.Column="2">
-                    <views:MetadataPage DataContext="{Binding MetaDataViewModel}" />
+                    <views:MetadataPage DataContext="{Binding MetaDataViewModel}">
+
+                    </views:MetadataPage>
                 </Grid>
             </Grid>
         </Grid>

@@ -22,7 +22,7 @@ namespace SimplePhotoEditor.ViewModels
         private bool creatingNewDir = false;
         private bool focusOnFileName;
         private bool isSaving = false;
-        private DateTime dateTaken;
+        private DateTime? dateTaken;
         private ICommand addTagCommand;
         private ICommand cancelCommand;
         private ICommand changeRootFolderCommand;
@@ -71,7 +71,7 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        public DateTime DateTaken
+        public DateTime? DateTaken
         {
             get => dateTaken;
             set => SetProperty(ref dateTaken, value);
@@ -98,6 +98,7 @@ namespace SimplePhotoEditor.ViewModels
                         {
                             GetSaveToFolderOptions();
                         }
+                        FocusOnFileName = true;
                     }
                     RaisePropertyChanged(nameof(FilePath));
                 }
@@ -265,7 +266,8 @@ namespace SimplePhotoEditor.ViewModels
             Title = shellFile.Properties.System.Title.Value;
             Subject = shellFile.Properties.System.Subject.Value;
             Comment = shellFile.Properties.System.Comment.Value;
-            DateTaken = Convert.ToDateTime(shellFile.Properties.System.Photo.DateTaken.Value);
+            var dateTakenValue = shellFile.Properties.System.Photo.DateTaken.Value;
+            DateTaken = dateTakenValue == null ? dateTakenValue : (DateTime?)Convert.ToDateTime(dateTakenValue);
             string[] tagsArray = shellFile.Properties.System.Keywords.Value;
             if (tagsArray != null)
             {
@@ -333,18 +335,10 @@ namespace SimplePhotoEditor.ViewModels
 
             IsSaving = true;
             _ = Task.Run(async () => await SaveImage(dataToSave));
-                GetThumbnailViewModel();
-                UpdateThumbnailDetails(ThumbnailViewModel, GoToNextImage, dataToSave);
+            UpdateThumbnailDetails(GoToNextImage, dataToSave);
             if (CallingPage == PageKeys.SingleImage)
             {
-                if (string.Equals(GoToNextImage, "true", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (SingleImageViewModel == null)
-                    {
-                        GetSingleImageViewModel();
-                    }
-                    UpdateSingleImageDetails(SingleImageViewModel, GoToNextImage, dataToSave);
-                }
+                UpdateSingleImageDetails(GoToNextImage, dataToSave);
             }
             IsSaving = false;
         }
@@ -412,19 +406,20 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        private void UpdateThumbnailDetails(ThumbnailViewModel thumbnailVM, string GoToNextImage, ImageInfo data)
+        private void UpdateThumbnailDetails(string GoToNextImage, ImageInfo data)
         {
-            var currentImageIndex = thumbnailVM.Images.IndexOf(thumbnailVM.SelectedImage);
-            if (thumbnailVM.CurrentFolder != data.SelectedSaveToFolder)
+            GetThumbnailViewModel();
+            var currentImageIndex = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage);
+            if (ThumbnailViewModel.CurrentFolder != data.SelectedSaveToFolder)
             {
-                thumbnailVM.Images.RemoveAt(currentImageIndex);
-                thumbnailVM.SelectNextImage(currentImageIndex);
+                ThumbnailViewModel.Images.RemoveAt(currentImageIndex);
+                ThumbnailViewModel.SelectNextImage(currentImageIndex);
             }
             else
             {
-                thumbnailVM.Images[currentImageIndex].FileName = data.FileName;
-                thumbnailVM.Images[currentImageIndex].FilePath = data.NewFilePath;
-                thumbnailVM.Images[currentImageIndex].MetaDataModified =
+                ThumbnailViewModel.Images[currentImageIndex].FileName = data.FileName;
+                ThumbnailViewModel.Images[currentImageIndex].FilePath = data.NewFilePath;
+                ThumbnailViewModel.Images[currentImageIndex].MetaDataModified =
                         !string.IsNullOrEmpty(data.Title) ||
                         !string.IsNullOrEmpty(data.Subject) ||
                         !string.IsNullOrEmpty(data.Comment) ||
@@ -433,18 +428,24 @@ namespace SimplePhotoEditor.ViewModels
 
                 if (string.Equals(GoToNextImage, "true", StringComparison.OrdinalIgnoreCase))
                 {
-                    thumbnailVM.SelectNextImage(currentImageIndex + 1);
+                    ThumbnailViewModel.SelectNextImage(currentImageIndex + 1);
                 }
             }
         }
 
-        private void UpdateSingleImageDetails(SingleImageViewModel singleImageViewModel, string GoToNextImage, ImageInfo data)
+        private void UpdateSingleImageDetails(string GoToNextImage, ImageInfo data)
         {
-            if (ThumbnailViewModel == null)
+            if (SingleImageViewModel == null)
             {
-                GetThumbnailViewModel();
+                GetSingleImageViewModel();
             }
+            SingleImageViewModel.FileName = data.FileName;
+            SingleImageViewModel.FilePath = data.NewFilePath;
 
+            if (string.Equals(GoToNextImage, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                SingleImageViewModel.SelectNextImage();
+            }
         }
     }
 }

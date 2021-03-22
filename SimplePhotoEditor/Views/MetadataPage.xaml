@@ -13,11 +13,25 @@
     d:DesignHeight="450"
     d:DesignWidth="800"
     prism:ViewModelLocator.AutoWireViewModel="True"
+    Loaded="UserControl_Loaded"
     Style="{StaticResource BaseUserControlStyle}"
     mc:Ignorable="d">
     <UserControl.Resources>
         <Thickness x:Key="GridMargin">5</Thickness>
     </UserControl.Resources>
+    <UserControl.InputBindings>
+        <KeyBinding
+            Key="S"
+            Command="{Binding SaveCommand}"
+            CommandParameter=""
+            Modifiers="Control" />
+
+        <KeyBinding
+            Key="S"
+            Command="{Binding SaveNextCommand}"
+            CommandParameter="true"
+            Modifiers="Ctrl+Alt" />
+    </UserControl.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -46,12 +60,13 @@
                 HorizontalAlignment="Right"
                 Content="File Name:" />
             <TextBox
+                x:Name="FilenameTextbox"
                 Grid.Row="0"
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
-                exts:FocusExtension.IsFocused="{Binding FocusOnFileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                exts:FocusExtension.IsFocused="{Binding FocusOnFileName}"
                 TabIndex="100"
-                Text="{Binding FileName, Mode=TwoWay}" />
+                Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
                 Grid.Row="1"
                 Grid.Column="0"
@@ -63,7 +78,7 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 TabIndex="101"
-                Text="{Binding Title, Mode=TwoWay}" />
+                Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
                 Grid.Row="2"
                 Grid.Column="0"
@@ -75,7 +90,7 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 TabIndex="102"
-                Text="{Binding Subject, Mode=TwoWay}" />
+                Text="{Binding Subject, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
                 Grid.Row="3"
                 Grid.Column="0"
@@ -87,7 +102,7 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 TabIndex="103"
-                Text="{Binding Comment, Mode=TwoWay}" />
+                Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
                 Grid.Row="4"
                 Grid.Column="0"
@@ -99,7 +114,7 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 TabIndex="104"
-                Text="{Binding DateTaken, Mode=TwoWay}" />
+                Text="{Binding DateTaken, Mode=TwoWay, TargetNullValue='', UpdateSourceTrigger=PropertyChanged}" />
             <Label
                 Grid.Row="5"
                 Grid.Column="0"

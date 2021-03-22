@@ -15,6 +15,9 @@
     prism:ViewModelLocator.AutoWireViewModel="True"
     Style="{StaticResource BaseUserControlStyle}"
     mc:Ignorable="d">
+    <UserControl.Resources>
+        <Thickness x:Key="GridMargin">2</Thickness>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="48" />
@@ -63,10 +66,11 @@
                             Margin="5"
                             Background="{StaticResource MahApps.Brushes.Flyout.Background}">
                             <Image
+                                x:Name="ImageElement"
                                 Margin="5"
                                 MouseDown="Image_MouseDown"
                                 MouseMove="Image_MouseMove"
-                                Source="{Binding PreviewImage, Mode=TwoWay}" />
+                                Source="{Binding PreviewImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                         </Grid>
                         <Button
                             Grid.Column="2"
@@ -84,26 +88,32 @@
                                 Text="&#xEDDA;" />
                         </Button>
                     </Grid>
-                    <Grid Grid.Row="1" Height="60">
+                    <Grid Grid.Row="1" Height="Auto">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="50" />
+                            <ColumnDefinition Width="50" />
+                            <ColumnDefinition Width="50" />
+                            <ColumnDefinition Width="50" />
+                            <ColumnDefinition Width="50" />
+                            <ColumnDefinition Width="50" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Button
+                        <ToggleButton
                             Grid.Column="0"
                             IsEnabled="False"
+                            Height="50"
+                            IsChecked="{Binding CropSelected}"
+                            Margin="{StaticResource GridMargin}"
+                            Click="CropButton_Click"
                             ToolTip="Crop">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
                                 FontSize="24"
                                 Text="&#xE123;" />
-                        </Button>
+                        </ToggleButton>
                         <Button
                             Grid.Column="1"
+                            Margin="{StaticResource GridMargin}"
                             IsEnabled="False"
                             ToolTip="Auto-Crop">
                             <TextBlock
@@ -113,6 +123,7 @@
                         </Button>
                         <Button
                             Grid.Column="2"
+                            Margin="{StaticResource GridMargin}"
                             IsEnabled="False"
                             ToolTip="Rotate Left">
                             <TextBlock
@@ -122,6 +133,7 @@
                         </Button>
                         <Button
                             Grid.Column="3"
+                            Margin="{StaticResource GridMargin}"
                             IsEnabled="False"
                             ToolTip="Rotate Right">
                             <TextBlock
@@ -141,11 +153,12 @@
                         </Button>
                         <Button
                             Grid.Column="4"
+                            Margin="{StaticResource GridMargin}"
                             IsEnabled="False"
                             ToolTip="Skew">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
-                                FontSize="24"
+                                FontSize="22"
                                 RenderTransformOrigin="0.5,0.5"
                                 Text="&#xE15B;">
                                 <TextBlock.RenderTransform>
@@ -160,6 +173,7 @@
                         </Button>
                         <Button
                             Grid.Column="5"
+                            Margin="{StaticResource GridMargin}"
                             IsEnabled="False"
                             ToolTip="Undo">
                             <TextBlock
@@ -167,6 +181,25 @@
                                 FontSize="24"
                                 Text="&#xE10E;" />
                         </Button>
+                        <Grid Grid.Column="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button
+                                Grid.Column="1"
+                                Width="60"
+                                Margin="{StaticResource GridMargin}"
+                                Content="Apply"
+                                Visibility="Hidden" />
+                            <Button
+                                Grid.Column="2"
+                                Width="60"
+                                Margin="{StaticResource GridMargin}"
+                                Content="Cancel"
+                                Visibility="Hidden" />
+                        </Grid>
                     </Grid>
                 </Grid>
             </Grid>
