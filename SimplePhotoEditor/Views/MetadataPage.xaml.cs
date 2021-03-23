@@ -55,11 +55,7 @@ namespace SimplePhotoEditor.Views
 
         private void FilenameTextbox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            if (Regex.Match(((TextBox)sender).Text + e.Text, fileValidationRegex).Success)
-            {
-                //((TextBox)sender).BorderBrush = new SolidColorBrush(Colors.Red);
-                ((TextBox)sender).Text.Remove(((TextBox)sender).Text.Length);
-            }
+            e.Handled = !Regex.Match(((TextBox)sender).Text + e.Text, fileValidationRegex).Success;
         }
     }
 }

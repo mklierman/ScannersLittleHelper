@@ -124,6 +124,7 @@ namespace SimplePhotoEditor.ViewModels
                 if (SaveToRootFolder == null)
                 {
                     SaveToRootFolder = SelectedSaveToFolder;
+                    MaxFileNameLength = 230 - SelectedSaveToFolder.Length;
                 }
                 if (!creatingNewDir && string.Equals(SelectedSaveToFolder, "[Create New Directory]", StringComparison.OrdinalIgnoreCase))
                 {
