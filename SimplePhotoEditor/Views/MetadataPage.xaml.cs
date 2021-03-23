@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Composition;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -21,6 +22,7 @@ namespace SimplePhotoEditor.Views
     /// </summary>
     public partial class MetadataPage : UserControl
     {
+        private readonly string fileValidationRegex = @"\A(?!(?:COM[0-9]|CON|LPT[0-9]|NUL|PRN|AUX|com[0-9]|con|lpt[0-9]|nul|prn|aux)(\.|\z)|\s|[\.]{2,})[^\\\/:*""?<>|]{1,254}(?<![\s\.])\z";
         public MetadataPage()
         {
             InitializeComponent();
@@ -49,6 +51,15 @@ namespace SimplePhotoEditor.Views
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
+        }
+
+        private void FilenameTextbox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (Regex.Match(((TextBox)sender).Text + e.Text, fileValidationRegex).Success)
+            {
+                //((TextBox)sender).BorderBrush = new SolidColorBrush(Colors.Red);
+                ((TextBox)sender).Text.Remove(((TextBox)sender).Text.Length);
+            }
         }
     }
 }

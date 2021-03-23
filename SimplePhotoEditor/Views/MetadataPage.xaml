@@ -68,7 +68,7 @@
                 MaxLength="{Binding MaxFileNameLength, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 MaxLines="1"
                 TabIndex="100"
-                Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="FilenameTextbox_PreviewTextInput" />
             <Label
                 Grid.Row="1"
                 Grid.Column="0"
