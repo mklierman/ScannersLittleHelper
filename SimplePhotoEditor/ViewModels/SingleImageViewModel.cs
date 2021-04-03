@@ -115,7 +115,7 @@ namespace SimplePhotoEditor.ViewModels
             else
             {
                 GetThumbnailViewModel();
-                FilePath = ThumbnailViewModel.SelectedImage.FilePath;
+                FilePath = ThumbnailViewModel.SelectedImage?.FilePath;
             }
             CheckThumbnailListPosition();
         }
