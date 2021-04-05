@@ -57,5 +57,23 @@ namespace SimplePhotoEditor.Managers
         {
             RefreshCropImage();
         }
+
+        public Rectangle GetCropRect()
+        {
+            if (cropAdorner != null)
+            {
+                return new Rectangle(
+                (int)(cropAdorner.ActualWidth * 0.2),
+                (int)(cropAdorner.ActualHeight * 0.2),
+                (int)cropAdorner.ActualWidth,
+                (int)cropAdorner.ActualHeight);
+            }
+
+            return new Rectangle(
+                (int)(currentFrameworkElement.ActualWidth * 0.2),
+                (int)(currentFrameworkElement.ActualHeight * 0.2),
+                (int)currentFrameworkElement.ActualWidth,
+                (int)currentFrameworkElement.ActualHeight);
+        }
     }
 }

@@ -100,7 +100,7 @@
                         </Grid.ColumnDefinitions>
                         <ToggleButton
                             Grid.Column="0"
-                            IsEnabled="False"
+                            IsEnabled="True"
                             Height="50"
                             IsChecked="{Binding CropSelected}"
                             Margin="{StaticResource GridMargin}"
@@ -190,15 +190,17 @@
                             <Button
                                 Grid.Column="1"
                                 Width="60"
+                                Command="{Binding ApplyEditCommand}"
                                 Margin="{StaticResource GridMargin}"
                                 Content="Apply"
-                                Visibility="Hidden" />
+                                Visibility="{Binding ApplyEditVisibility}" />
                             <Button
                                 Grid.Column="2"
                                 Width="60"
+                                Command="{Binding CancelEditCommand}"
                                 Margin="{StaticResource GridMargin}"
                                 Content="Cancel"
-                                Visibility="Hidden" />
+                                Visibility="{Binding CancelEditVisibility}" />
                         </Grid>
                     </Grid>
                 </Grid>

@@ -7,7 +7,9 @@ using SimplePhotoEditor.Constants;
 using SimplePhotoEditor.Managers;
 using SimplePhotoEditor.Views;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.IO;
 using System.Windows;
 using System.Windows.Documents;
@@ -35,6 +37,7 @@ namespace SimplePhotoEditor.ViewModels
         private ThumbnailViewModel ThumbnailViewModel;
         private string fileName;
         private string filePath;
+        private List<ImageSource> EditHistory;
 
         public SingleImageViewModel(IRegionManager regionManager, IDialogService dialogService)
         {
@@ -194,5 +197,59 @@ namespace SimplePhotoEditor.ViewModels
             cropper.AddCropToElement(frameworkElement);
         }
 
+        private Visibility applyEditVisibility;
+
+        public Visibility ApplyEditVisibility { get => applyEditVisibility; set => SetProperty(ref applyEditVisibility, value); }
+
+        private Visibility cancelEditVisibility;
+
+        public Visibility CancelEditVisibility { get => cancelEditVisibility; set => SetProperty(ref cancelEditVisibility, value); }
+
+        private bool? cropSelected;
+
+        public bool? CropSelected
+        {
+            get => cropSelected; 
+            set
+            {
+                SetProperty(ref cropSelected, value);
+                if (value == true)
+                {
+                    ApplyEditVisibility = Visibility.Visible;
+                    CancelEditVisibility = Visibility.Visible;
+                }
+                else
+                {
+                    ApplyEditVisibility = Visibility.Hidden;
+                    CancelEditVisibility = Visibility.Hidden;
+                    cropper.RemoveCropFromCur();
+                }
+            }
+        }
+        private Rectangle cropRect;
+        public Rectangle CropRect { get => cropRect; set => SetProperty(ref cropRect, value); }
+
+        private ICommand applyEditCommand;
+        public ICommand ApplyEditCommand => applyEditCommand ??= new DelegateCommand(ApplyEdit);
+
+        private void ApplyEdit()
+        {
+            CropSelected = false;
+            CropRect = cropper.GetCropRect();
+            using (ImageFactory imageFactory = new ImageFactory())
+            {
+                imageFactory.Load(FilePath)
+                    .Crop(CropRect);
+
+            }
+        }
+
+        private ICommand cancelEditCommand;
+        public ICommand CancelEditCommand => cancelEditCommand ??= new DelegateCommand(CancelEdit);
+
+        private void CancelEdit()
+        {
+            CropSelected = false;
+        }
     }
 }
