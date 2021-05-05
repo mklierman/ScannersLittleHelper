@@ -367,10 +367,31 @@ namespace SimplePhotoEditor.CroppingAdorner
 				return null;
 			}
 			System.Windows.Int32Rect rcFrom = new System.Windows.Int32Rect(pxFromPos.X, pxFromPos.Y, pxFromSize.X, pxFromSize.Y);
-
+			Rect r = new Rect(pxFromPos.X, pxFromPos.Y, pxFromSize.X, pxFromSize.Y);
 			RenderTargetBitmap rtb = new RenderTargetBitmap(pxWhole.X, pxWhole.Y, s_dpiX, s_dpiY, PixelFormats.Default);
 			rtb.Render(AdornedElement);
 			return new CroppedBitmap(rtb, rcFrom);
+		}
+
+		public Rect GetCropRect()
+        {
+			Thickness margin = AdornerMargin();
+			Rect rcInterior = _prCropMask.RectInterior;
+
+			Point pxFromSize = UnitsToPx(rcInterior.Width, rcInterior.Height);
+
+			// It appears that CroppedBitmap indexes from the upper left of the margin whereas RenderTargetBitmap renders the
+			// control exclusive of the margin.  Hence our need to take the margins into account here...
+
+			Point pxFromPos = UnitsToPx(rcInterior.Left + margin.Left, rcInterior.Top + margin.Top);
+			Point pxWhole = UnitsToPx(AdornedElement.RenderSize.Width + margin.Left, AdornedElement.RenderSize.Height + margin.Left);
+			pxFromSize.X = Math.Max(Math.Min(pxWhole.X - pxFromPos.X, pxFromSize.X), 0);
+			pxFromSize.Y = Math.Max(Math.Min(pxWhole.Y - pxFromPos.Y, pxFromSize.Y), 0);
+			if (pxFromSize.X == 0 || pxFromSize.Y == 0)
+			{
+				return default;
+			}
+			return new Rect(pxFromPos.X, pxFromPos.Y, pxFromSize.X, pxFromSize.Y);
 		}
 		#endregion
 

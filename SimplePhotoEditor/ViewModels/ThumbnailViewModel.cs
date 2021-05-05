@@ -122,10 +122,13 @@ namespace SimplePhotoEditor.ViewModels
         {
             if (App.Current.Properties.Contains("LastThumbnailFolder"))
             {
-                CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
-                if (!string.IsNullOrEmpty(CurrentFolder))
+                if (Directory.Exists(App.Current.Properties["LastThumbnailFolder"].ToString()))
                 {
-                    Task.Run(() => CreateThumbnails());
+                    CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
+                    if (!string.IsNullOrEmpty(CurrentFolder))
+                    {
+                        Task.Run(() => CreateThumbnails());
+                    }
                 }
             }
         }
@@ -254,7 +257,7 @@ namespace SimplePhotoEditor.ViewModels
         {
             if (string.IsNullOrEmpty(CurrentFolder))
             {
-                if (App.Current.Properties.Contains("LastThumbnailFolder"))
+                if (App.Current.Properties.Contains("LastThumbnailFolder") && Directory.Exists(App.Current.Properties["LastThumbnailFolder"].ToString()))
                 {
                     CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
                     if (!string.IsNullOrEmpty(CurrentFolder))

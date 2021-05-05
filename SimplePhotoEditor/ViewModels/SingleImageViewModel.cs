@@ -1,12 +1,15 @@
 ﻿using ImageProcessor;
+using ImageProcessor.Imaging;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Regions;
 using Prism.Services.Dialogs;
 using SimplePhotoEditor.Constants;
 using SimplePhotoEditor.Managers;
+using SimplePhotoEditor.Models;
 using SimplePhotoEditor.Views;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -27,6 +30,8 @@ namespace SimplePhotoEditor.ViewModels
         private ICommand undoCommand;
         private ICommand nextImageCommand;
         private ICommand previousImageCommand;
+        private ICommand applyCommand;
+        private ICommand cancelCommand;
         private IDialogService DialogService;
         private ImageFactory selectedImage;
         private ImageSource previewImage;
@@ -35,6 +40,9 @@ namespace SimplePhotoEditor.ViewModels
         private ThumbnailViewModel ThumbnailViewModel;
         private string fileName;
         private string filePath;
+        private string applyButtonText;
+        private string cancelButtonText;
+        private Stack<EditUndoModel> imageUndoStack = new Stack<EditUndoModel>();
 
         public SingleImageViewModel(IRegionManager regionManager, IDialogService dialogService)
         {
@@ -47,9 +55,11 @@ namespace SimplePhotoEditor.ViewModels
         public ICommand RotateLeftCommand => rotateLeftCommand ?? (rotateLeftCommand = new DelegateCommand(GetImagePreview));
         public ICommand RotateRightCommand => rotateRightCommand ?? (rotateRightCommand = new DelegateCommand(GetImagePreview));
         public ICommand SkewCommand => skewCommand ?? (skewCommand = new DelegateCommand(GetImagePreview));
-        public ICommand UndoCommand => undoCommand ?? (undoCommand = new DelegateCommand(GetImagePreview));
+        public ICommand UndoCommand => undoCommand ?? (undoCommand = new DelegateCommand(UndoEdit));
         public ICommand NextImageCommand => nextImageCommand ?? (nextImageCommand = new DelegateCommand(SelectNextImage));
         public ICommand PreviousImageCommand => previousImageCommand ?? (previousImageCommand = new DelegateCommand(SelectPreviousImage));
+        public ICommand ApplyCommand => applyCommand ?? (applyCommand = new DelegateCommand(ApplyCrop));
+        public ICommand CancelCommand => cancelCommand ?? (cancelCommand = new DelegateCommand(CancelCrop));
         public string FileName
         {
             get => fileName;
@@ -82,18 +92,22 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
+        public string ApplyButtonText { get => applyButtonText; set => SetProperty(ref applyButtonText, value); }
+        public string CancelButtonText { get => cancelButtonText; set => SetProperty(ref cancelButtonText, value); }
+
         public MetadataViewModel MetaDataViewModel { get => metadataViewModel; set => SetProperty(ref metadataViewModel, value); }
         public ImageSource PreviewImage
         {
             get => previewImage;
-            set
-            {
-                if (previewImage != value)
-                {
-                    previewImage = value;
-                    RaisePropertyChanged(nameof(PreviewImage));
-                }
-            }
+            set => SetProperty(ref previewImage, value);
+            //{
+            //    if (previewImage != value)
+            //    {
+
+            //        previewImage = value;
+            //        RaisePropertyChanged(nameof(PreviewImage));
+            //    }
+            //}
         }
 
         public bool IsNavigationTarget(NavigationContext navigationContext)
@@ -188,11 +202,63 @@ namespace SimplePhotoEditor.ViewModels
             metadataViewModel.FilePath = FilePath;
         }
 
+        private Visibility applyCancelVisibility = Visibility.Hidden;
+        public Visibility ApplyCancelVisibility
+        {
+            get => applyCancelVisibility;
+            set => SetProperty(ref applyCancelVisibility, value);
+        }
+
         private CropManager cropper = new CropManager();
         private void StartCrop(FrameworkElement frameworkElement)
         {
             cropper.AddCropToElement(frameworkElement);
+            ApplyCancelVisibility = Visibility.Visible;
+            ApplyButtonText = "Apply Crop";
+            CancelButtonText = "Cancel Crop";
         }
 
+        private void ApplyCrop()
+        {
+            CropLayer cropLayer = cropper.ApplyCrop();
+            //FilePath, Path.GetDirectoryName(FilePath) + "\\cropped.jpg"
+            ApplyCancelVisibility = Visibility.Hidden;
+
+            ImageProcessor.ImageFactory imageFactory = new ImageFactory();
+            if (imageUndoStack.Count > 0)
+            {
+                imageFactory.Load(imageUndoStack.Peek().TempFilePath);
+            }
+            else
+            {
+                imageFactory.Load(FilePath);
+            }
+            imageFactory.Crop(cropLayer);
+            var tempCroppedImagePath = Path.GetTempFileName();
+            imageFactory.Save(tempCroppedImagePath);
+            var editModel = new EditUndoModel(PreviewImage, tempCroppedImagePath, cropLayer);
+            imageUndoStack.Push(editModel);
+
+            var bmi = new BitmapImage();
+            bmi.BeginInit();
+            bmi.CacheOption = BitmapCacheOption.OnLoad;
+            bmi.UriSource = new Uri(tempCroppedImagePath);
+            bmi.EndInit();
+            PreviewImage = bmi;
+        }
+
+        private void CancelCrop()
+        {
+            cropper.RemoveCropFromCur();
+            ApplyCancelVisibility = Visibility.Hidden;
+        }
+
+        private void UndoEdit()
+        {
+            if (imageUndoStack.Count > 0)
+            {
+                PreviewImage = imageUndoStack.Pop().ImageSource;
+            }
+        }
     }
 }
