@@ -5,6 +5,11 @@
     <RootNamespace>SimplePhotoEditor</RootNamespace>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>AnyCPU;x64</Platforms>
+    <AssemblyName>Scanners Little Helper</AssemblyName>
+    <StartupObject>SimplePhotoEditor.App</StartupObject>
+	<RuntimeIdentifiers>win10-x64</RuntimeIdentifiers>
+	<ApplicationIcon></ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DNTScanner.Core" Version="1.1.2" />
@@ -33,7 +38,8 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup>
+
+	<ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
