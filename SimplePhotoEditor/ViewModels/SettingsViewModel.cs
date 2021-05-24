@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows.Input;
-
+using DNTScanner.Core;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Regions;
@@ -21,6 +23,65 @@ namespace SimplePhotoEditor.ViewModels
         private string _versionDescription;
         private ICommand _setThemeCommand;
         private ICommand _privacyStatementCommand;
+        private Dictionary<string, ScannerSettings> scannerList = new Dictionary<string, ScannerSettings>();
+        private ScannerSettings selectedScanner;
+        private ObservableCollection<int> dpiList = new ObservableCollection<int>();
+        private int selectedDPI;
+
+
+        public Dictionary<string, ScannerSettings> ScannerList
+        {
+            get
+            {
+                return scannerList;
+            }
+            set { SetProperty(ref scannerList, value); }
+        }
+
+        public ScannerSettings SelectedScanner
+        {
+            get { return selectedScanner; }
+            set { SetProperty(ref selectedScanner, value); PopulateDPIList(); }
+        }
+
+        private void PopulateScanners()
+        {
+            ScannerList.Clear();
+            var scanners = SystemDevices.GetScannerDevices();
+            foreach (var scanner in scanners)
+            {
+                scanner.ScannerDeviceSettings.TryGetValue("Name", out object scannerName);
+                ScannerList.Add(scannerName.ToString(), scanner);
+            }
+        }
+
+        public ObservableCollection<int> DPIList
+        {
+            get
+            {
+                return dpiList;
+            }
+            set { SetProperty(ref dpiList, value); }
+        }
+
+        public int SelectedDPI
+        {
+            get { return selectedDPI; }
+            set { SetProperty(ref selectedDPI, value); }
+        }
+
+        private void PopulateDPIList()
+        {
+            if (SelectedScanner != null)
+            {
+                DPIList.Clear();
+                var supportedDPIs = SelectedScanner.SupportedResolutions;
+                foreach (var res in supportedDPIs)
+                {
+                    DPIList.Add(res);
+                }
+            }
+        }
 
         public AppTheme Theme
         {
@@ -50,6 +111,7 @@ namespace SimplePhotoEditor.ViewModels
         {
             VersionDescription = $"SimplePhotoEditor - {_applicationInfoService.GetVersion()}";
             Theme = _themeSelectorService.GetCurrentTheme();
+            PopulateScanners();
         }
 
         public void OnNavigatedFrom(NavigationContext navigationContext)
