@@ -168,4 +168,10 @@
   <data name="AppDisplayName" xml:space="preserve">
     <value>Scanners Little Helper</value>
   </data>
+  <data name="ScanPageTitle" xml:space="preserve">
+    <value>Scan</value>
+  </data>
+  <data name="ShellScanPage" xml:space="preserve">
+    <value>Scan</value>
+  </data>
 </root>

@@ -43,6 +43,7 @@ namespace SimplePhotoEditor.ViewModels
         {
             new HamburgerMenuGlyphItem() { Label = Resources.ShellThumbnailPage, Glyph = "\uF0E2", Tag = PageKeys.Thumbnail },
             new HamburgerMenuGlyphItem() { Label = Resources.ShellSingleImagePage, Glyph = "\uE130", Tag = PageKeys.SingleImage },
+            new HamburgerMenuGlyphItem() { Label = Resources.ShellScanPage, Glyph = "\uE131", Tag = PageKeys.Scan },
         };
 
         public ObservableCollection<HamburgerMenuItem> OptionMenuItems { get; } = new ObservableCollection<HamburgerMenuItem>()

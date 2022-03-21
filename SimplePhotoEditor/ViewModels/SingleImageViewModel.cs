@@ -17,6 +17,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ImageMagick;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -50,7 +51,28 @@ namespace SimplePhotoEditor.ViewModels
             RegionManager = regionManager;
         }
 
-        public ICommand AutoCropCommand => autoCropCommand ?? (autoCropCommand = new DelegateCommand(GetImagePreview));
+        public ICommand AutoCropCommand => autoCropCommand ?? (autoCropCommand = new DelegateCommand(AutoCrop));
+
+        private void AutoCrop()
+        {
+            using (var image = new MagickImage(FilePath))
+            {
+                image.Trim(Gravity.North);
+
+                var tempCroppedImagePath = Path.GetTempFileName();
+                image.Write(tempCroppedImagePath);
+                var editModel = new EditUndoModel(PreviewImage, tempCroppedImagePath, null);
+                imageUndoStack.Push(editModel);
+
+                var bmi = new BitmapImage();
+                bmi.BeginInit();
+                bmi.CacheOption = BitmapCacheOption.OnLoad;
+                bmi.UriSource = new Uri(tempCroppedImagePath);
+                bmi.EndInit();
+                PreviewImage = bmi;
+            }
+        }
+
         public ICommand CropCommand => cropCommand ?? (cropCommand = new DelegateCommand<FrameworkElement>(StartCrop));
         public ICommand RotateLeftCommand => rotateLeftCommand ?? (rotateLeftCommand = new DelegateCommand(GetImagePreview));
         public ICommand RotateRightCommand => rotateRightCommand ?? (rotateRightCommand = new DelegateCommand(GetImagePreview));
@@ -100,14 +122,6 @@ namespace SimplePhotoEditor.ViewModels
         {
             get => previewImage;
             set => SetProperty(ref previewImage, value);
-            //{
-            //    if (previewImage != value)
-            //    {
-
-            //        previewImage = value;
-            //        RaisePropertyChanged(nameof(PreviewImage));
-            //    }
-            //}
         }
 
         public bool IsNavigationTarget(NavigationContext navigationContext)
@@ -129,7 +143,7 @@ namespace SimplePhotoEditor.ViewModels
             else
             {
                 GetThumbnailViewModel();
-                FilePath = ThumbnailViewModel.SelectedImage.FilePath;
+                FilePath = ThumbnailViewModel.SelectedImage?.FilePath;
             }
             CheckThumbnailListPosition();
         }
@@ -137,8 +151,8 @@ namespace SimplePhotoEditor.ViewModels
         private void CheckThumbnailListPosition()
         {
             GetThumbnailViewModel();
-            NextImageEnabled = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) < ThumbnailViewModel.Images.Count - 1;
-            PreviousImageEnabled = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) > 0;
+            NextImageEnabled = ThumbnailViewModel.Images?.IndexOf(ThumbnailViewModel.SelectedImage) < ThumbnailViewModel.Images?.Count - 1;
+            PreviousImageEnabled = ThumbnailViewModel.Images?.IndexOf(ThumbnailViewModel.SelectedImage) > 0;
         }
 
         private string sortMode;
@@ -209,6 +223,13 @@ namespace SimplePhotoEditor.ViewModels
             set => SetProperty(ref applyCancelVisibility, value);
         }
 
+        private bool cropSelected;
+        public bool CropSelected
+        {
+            get => cropSelected;
+            set => SetProperty(ref cropSelected, value);
+        }
+
         private CropManager cropper = new CropManager();
         private void StartCrop(FrameworkElement frameworkElement)
         {
@@ -216,6 +237,7 @@ namespace SimplePhotoEditor.ViewModels
             ApplyCancelVisibility = Visibility.Visible;
             ApplyButtonText = "Apply Crop";
             CancelButtonText = "Cancel Crop";
+            CropSelected = true;
         }
 
         private void ApplyCrop()
@@ -245,12 +267,14 @@ namespace SimplePhotoEditor.ViewModels
             bmi.UriSource = new Uri(tempCroppedImagePath);
             bmi.EndInit();
             PreviewImage = bmi;
+            CropSelected = false;
         }
 
         private void CancelCrop()
         {
             cropper.RemoveCropFromCur();
             ApplyCancelVisibility = Visibility.Hidden;
+            CropSelected = false;
         }
 
         private void UndoEdit()
