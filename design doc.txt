@@ -1,0 +1,22 @@
+*** Image Manipulation ***
+
+Preview Image should be used whenever possible to speed things up. 
+	Get screen resolution and set preview image to that size when in Single Image mode
+
+Source image should not be overwritten unless specifically requested by the user.
+	Preview image should be temporary
+	"Modified" source image should be a temporary copy until the request to save is sent.
+	All temp images and files should be cleaned when navigating to a different image or when application closes.
+
+Option to view "current" source image at any time should be provided.
+	It is possible that certain edits would have differing results on the preview image and the source image. eg, anything to do with color (if we provide that)
+
+Option to regenerate preview based on "current" source image.
+
+As edits are applied they should be done to the preview image immediately and then the source image in the background. 
+	We don't want the user waiting for edits to be applied to the source image at the end when saving.
+
+It is important that edits are applied in the order the user requests them as they can have an impact on further edits.
+
+Undo stack should be kept current at all times.
+
