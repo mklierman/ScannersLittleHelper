@@ -18,6 +18,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ImageMagick;
+using System.Threading.Tasks;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -39,6 +40,7 @@ namespace SimplePhotoEditor.ViewModels
         private IRegionManager RegionManager;
         private MetadataViewModel metadataViewModel;
         private ThumbnailViewModel ThumbnailViewModel;
+        private string tempFilePath;
         private string fileName;
         private string filePath;
         private string applyButtonText;
@@ -57,7 +59,9 @@ namespace SimplePhotoEditor.ViewModels
         {
             using (var image = new MagickImage(FilePath))
             {
-                image.Trim(Gravity.North);
+                image.Trim(new Percentage(10));
+                image.AutoLevel();
+                image.Rotate(90);
 
                 var tempCroppedImagePath = Path.GetTempFileName();
                 image.Write(tempCroppedImagePath);
@@ -74,9 +78,35 @@ namespace SimplePhotoEditor.ViewModels
         }
 
         public ICommand CropCommand => cropCommand ?? (cropCommand = new DelegateCommand<FrameworkElement>(StartCrop));
-        public ICommand RotateLeftCommand => rotateLeftCommand ?? (rotateLeftCommand = new DelegateCommand(GetImagePreview));
-        public ICommand RotateRightCommand => rotateRightCommand ?? (rotateRightCommand = new DelegateCommand(GetImagePreview));
-        public ICommand SkewCommand => skewCommand ?? (skewCommand = new DelegateCommand(GetImagePreview));
+        public ICommand RotateLeftCommand => rotateLeftCommand ?? (rotateLeftCommand = new DelegateCommand(RotateLeft));
+
+		private void RotateLeft()
+		{
+			var tempRotatePath = Path.GetTempFileName();
+			using (var image = new MagickImage(tempFilePath))
+			{
+				image.Rotate(-90);
+				image.Write(tempRotatePath);
+			}
+			RefreshPreviewImage(tempRotatePath);
+			File.Delete(tempRotatePath);
+		}
+
+		public ICommand RotateRightCommand => rotateRightCommand ?? (rotateRightCommand = new DelegateCommand(RotateRight));
+
+		private void RotateRight()
+		{
+            var tempRotatePath = Path.GetTempFileName();
+			using (var image = new MagickImage(tempFilePath))
+			{
+				image.Rotate(90);
+				image.Write(tempRotatePath);
+			}
+			RefreshPreviewImage(tempRotatePath);
+            File.Delete(tempRotatePath);
+		}
+
+		public ICommand SkewCommand => skewCommand ?? (skewCommand = new DelegateCommand(GetImagePreview));
         public ICommand UndoCommand => undoCommand ?? (undoCommand = new DelegateCommand(UndoEdit));
         public ICommand NextImageCommand => nextImageCommand ?? (nextImageCommand = new DelegateCommand(SelectNextImage));
         public ICommand PreviousImageCommand => previousImageCommand ?? (previousImageCommand = new DelegateCommand(SelectPreviousImage));
@@ -199,13 +229,42 @@ namespace SimplePhotoEditor.ViewModels
 
         private void GetImagePreview()
         {
-            var bmi = new BitmapImage();
-            bmi.BeginInit();
-            bmi.CacheOption = BitmapCacheOption.OnLoad;
-            bmi.UriSource = new Uri(FilePath);
-            bmi.EndInit();
-            PreviewImage = bmi;
-        }
+            tempFilePath = Path.GetTempFileName();
+            //var screenWidth = System.Windows.SystemParameters.PrimaryScreenWidth;
+            //var screenHeight = System.Windows.SystemParameters.PrimaryScreenHeight;
+
+            using (var image = new MagickImage(FilePath))
+            {
+				image.Write(tempFilePath);
+			}
+                //{
+                //             image.Thumbnail((int)screenWidth, (int)screenHeight);
+                //	var tempImagePath = Path.GetTempFileName();
+                //	image.Write(tempImagePath);
+
+                //	var bmi = new BitmapImage();
+                //	bmi.BeginInit();
+                //	bmi.CacheOption = BitmapCacheOption.OnLoad;
+                //	bmi.UriSource = new Uri(tempImagePath);
+                //	bmi.EndInit();
+                //	PreviewImage = bmi;
+                //}
+
+                //File.Copy(FilePath, tempFilePath);
+
+
+            RefreshPreviewImage(tempFilePath);
+		}
+
+        private void RefreshPreviewImage(string path)
+        {
+			var bmi = new BitmapImage();
+			bmi.BeginInit();
+			bmi.CacheOption = BitmapCacheOption.OnLoad;
+			bmi.UriSource = new Uri(path);
+			bmi.EndInit();
+			PreviewImage = bmi;
+		}
 
         private void ImageSelected()
         {

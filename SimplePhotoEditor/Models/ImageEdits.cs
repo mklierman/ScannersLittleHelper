@@ -9,6 +9,6 @@ namespace SimplePhotoEditor.Models
     public class ImageEdits
     {
         public CropLayer cropLayer { get; set; }
-
+        public double rotateAmount {get; set; }
     }
 }

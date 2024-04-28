@@ -125,7 +125,8 @@
                         <Button
                             Grid.Column="2"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="False"
+                            Command="{Binding RotateLeftCommand}"
+                            IsEnabled="True"
                             ToolTip="Rotate Left">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -135,7 +136,8 @@
                         <Button
                             Grid.Column="3"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="False"
+                            Command="{Binding RotateRightCommand}"
+                            IsEnabled="True"
                             ToolTip="Rotate Right">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
