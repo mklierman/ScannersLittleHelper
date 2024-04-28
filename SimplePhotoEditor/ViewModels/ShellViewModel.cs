@@ -18,6 +18,7 @@ namespace SimplePhotoEditor.ViewModels
     {
         private readonly IRegionManager _regionManager;
         private IRegionNavigationService _navigationService;
+        
         private HamburgerMenuItem _selectedMenuItem;
         private HamburgerMenuItem _selectedOptionsMenuItem;
         private DelegateCommand _goBackCommand;

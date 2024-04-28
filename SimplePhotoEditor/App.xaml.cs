@@ -78,6 +78,7 @@ namespace SimplePhotoEditor
             containerRegistry.Register<ISystemService, SystemService>();
             containerRegistry.Register<IPersistAndRestoreService, PersistAndRestoreService>();
             containerRegistry.Register<IThemeSelectorService, ThemeSelectorService>();
+            containerRegistry.Register<ISessionService, SessionService>();
 
             // Views
             containerRegistry.RegisterForNavigation<SettingsPage, SettingsViewModel>(PageKeys.Settings);

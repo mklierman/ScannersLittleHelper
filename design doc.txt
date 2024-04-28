@@ -13,8 +13,9 @@ Option to view "current" source image at any time should be provided.
 
 Option to regenerate preview based on "current" source image.
 
-As edits are applied they should be done to the preview image immediately and then the source image in the background. 
+As edits are applied they should be done to the preview image immediately and then a temporary copy of the source image in the background. 
 	We don't want the user waiting for edits to be applied to the source image at the end when saving.
+	When saved, the original source image can be replaced with the temp one that edits have been applied to.
 
 It is important that edits are applied in the order the user requests them as they can have an impact on further edits.
 

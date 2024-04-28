@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Windows.Controls;
 using SimplePhotoEditor.Helpers;
 using Prism.Services.Dialogs;
+using SimplePhotoEditor.Contracts.Services;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -38,10 +39,36 @@ namespace SimplePhotoEditor.ViewModels
         private ICommand refreshCommand;
         private IRegionManager RegionManager;
         private IDialogService DialogService;
+        private ISessionService SessionService;
         private ICommand folderBrowseCommand;
         private AsyncObservableCollection<Thumbnail> images = new AsyncObservableCollection<Thumbnail>();
         private MetadataViewModel metadataViewModel;
         private Thumbnail selectedImage;
+
+        public void RestoreLastThumbnailFolder()
+        {
+            if (App.Current.Properties.Contains("LastThumbnailFolder"))
+            {
+                if (Directory.Exists(App.Current.Properties["LastThumbnailFolder"].ToString()))
+                {
+                    CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
+                    if (!string.IsNullOrEmpty(CurrentFolder))
+                    {
+                        Task.Run(() => CreateThumbnails());
+                    }
+                }
+            }
+        }
+
+        public ThumbnailViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService)
+        {
+            DialogService = dialogService;
+            RegionManager = regionManager;
+            SessionService = sessionService;
+            object lockObj = new object();
+            BindingOperations.EnableCollectionSynchronization(Images, lockObj);
+            RestoreLastThumbnailFolder();
+        }
 
         public KeyValuePair<string, string>[] SortByOptions { get => sortByOptions; set => SetProperty(ref sortByOptions, value); }
         public string SelectedSortBy { get => selectedSortBy; set { SetProperty(ref selectedSortBy, value); OrderImageList(); } }
@@ -114,32 +141,11 @@ namespace SimplePhotoEditor.ViewModels
 
             var navParams = new NavigationParameters();
             navParams.Add("FilePath", SelectedImage.FilePath);
+            SessionService.CurrentImagePath = SelectedImage.FilePath;
             RegionManager.RequestNavigate(Regions.Main, PageKeys.SingleImage, navParams);
         }
 
 
-        public ThumbnailViewModel()
-        {
-            if (App.Current.Properties.Contains("LastThumbnailFolder"))
-            {
-                if (Directory.Exists(App.Current.Properties["LastThumbnailFolder"].ToString()))
-                {
-                    CurrentFolder = App.Current.Properties["LastThumbnailFolder"].ToString();
-                    if (!string.IsNullOrEmpty(CurrentFolder))
-                    {
-                        Task.Run(() => CreateThumbnails());
-                    }
-                }
-            }
-        }
-
-        public ThumbnailViewModel(IRegionManager regionManager, IDialogService dialogService)
-        {
-            DialogService = dialogService;
-            RegionManager = regionManager;
-            object lockObj = new object();
-            BindingOperations.EnableCollectionSynchronization(Images, lockObj);
-        }
 
         public string CurrentFolder { get => currentFolder; set => SetProperty(ref currentFolder, value); }
         public string FilePath { get => filePath; set => SetProperty(ref filePath, value); }
@@ -153,12 +159,13 @@ namespace SimplePhotoEditor.ViewModels
             set
             {
                 SetProperty(ref selectedImage, value);
-                if (MetaDataViewModel == null)
-                {
-                    MetaDataViewModel = new MetadataViewModel(RegionManager, DialogService, PageKeys.Thumbnail);
-                }
-                MetaDataViewModel.CallingPage = PageKeys.Thumbnail;
-                MetaDataViewModel.FilePath = value?.FilePath;
+                SessionService.CurrentImagePath = SelectedImage.FilePath;
+                //if (MetaDataViewModel == null)
+                //{
+                //    MetaDataViewModel = new MetadataViewModel(RegionManager, DialogService, PageKeys.Thumbnail);
+                //}
+                //MetaDataViewModel.CallingPage = PageKeys.Thumbnail;
+                //MetaDataViewModel.FilePath = value?.FilePath;
             }
         }
 
@@ -192,6 +199,7 @@ namespace SimplePhotoEditor.ViewModels
             if (nextImageIndex < Images.Count)
             {
                 SelectedImage = Images[nextImageIndex];
+                SessionService.CurrentImagePath = SelectedImage.FilePath;
             }
         }
 
@@ -234,6 +242,7 @@ namespace SimplePhotoEditor.ViewModels
             if (folderBrowser.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 CurrentFolder = folderBrowser.SelectedPath;
+                SessionService.CurrentFolder = CurrentFolder;
                 App.Current.Properties["LastThumbnailFolder"] = folderBrowser.SelectedPath;
                 Images.Clear();
                 Task.Run(() => CreateThumbnails());
@@ -275,6 +284,9 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnNavigatedFrom(NavigationContext navigationContext)
         {
+            SessionService.PeviousView = PageKeys.Thumbnail;
+            SessionService.CurrentImagePath = SelectedImage?.FilePath;
+            SessionService.CurrentFolder = CurrentFolder;
             //throw new NotImplementedException();
         }
     }

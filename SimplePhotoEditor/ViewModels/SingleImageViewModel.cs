@@ -19,6 +19,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ImageMagick;
 using System.Threading.Tasks;
+using SimplePhotoEditor.Contracts.Services;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -35,6 +36,7 @@ namespace SimplePhotoEditor.ViewModels
         private ICommand applyCommand;
         private ICommand cancelCommand;
         private IDialogService DialogService;
+        private ISessionService SessionService;
         private ImageFactory selectedImage;
         private ImageSource previewImage;
         private IRegionManager RegionManager;
@@ -47,10 +49,11 @@ namespace SimplePhotoEditor.ViewModels
         private string cancelButtonText;
         private Stack<EditUndoModel> imageUndoStack = new Stack<EditUndoModel>();
 
-        public SingleImageViewModel(IRegionManager regionManager, IDialogService dialogService)
+        public SingleImageViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService)
         {
             DialogService = dialogService;
             RegionManager = regionManager;
+            SessionService = sessionService;
         }
 
         public ICommand AutoCropCommand => autoCropCommand ?? (autoCropCommand = new DelegateCommand(AutoCrop));
@@ -101,9 +104,11 @@ namespace SimplePhotoEditor.ViewModels
 			{
 				image.Rotate(90);
 				image.Write(tempRotatePath);
+                
 			}
 			RefreshPreviewImage(tempRotatePath);
-            File.Delete(tempRotatePath);
+            
+            //File.Delete(tempRotatePath);
 		}
 
 		public ICommand SkewCommand => skewCommand ?? (skewCommand = new DelegateCommand(GetImagePreview));
@@ -161,20 +166,22 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnNavigatedFrom(NavigationContext navigationContext)
         {
+            SessionService.PeviousView = PageKeys.SingleImage;
         }
 
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
-            var parameter = navigationContext.Parameters["FilePath"]?.ToString();
-            if (parameter != null)
-            {
-                FilePath = parameter;
-            }
-            else
-            {
-                GetThumbnailViewModel();
-                FilePath = ThumbnailViewModel.SelectedImage?.FilePath;
-            }
+            FilePath = SessionService.CurrentImagePath;
+            //var parameter = navigationContext.Parameters["FilePath"]?.ToString();
+            //if (parameter != null)
+            //{
+            //    FilePath = parameter;
+            //}
+            //else
+            //{
+            //    GetThumbnailViewModel();
+            //    FilePath = ThumbnailViewModel.SelectedImage?.FilePath;
+            //}
             CheckThumbnailListPosition();
         }
 
@@ -211,6 +218,7 @@ namespace SimplePhotoEditor.ViewModels
                 var nextImageIndex = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) + 1;
                 FilePath = ThumbnailViewModel.Images[nextImageIndex].FilePath;
                 ThumbnailViewModel.SelectedImage = ThumbnailViewModel.Images[nextImageIndex];
+                SessionService.CurrentImagePath = FilePath;
             }
             CheckThumbnailListPosition();
         }
@@ -223,6 +231,7 @@ namespace SimplePhotoEditor.ViewModels
                 var previousImageIndex = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) - 1;
                 FilePath = ThumbnailViewModel.Images[previousImageIndex].FilePath;
                 ThumbnailViewModel.SelectedImage = ThumbnailViewModel.Images[previousImageIndex];
+                SessionService.CurrentImagePath = FilePath;
             }
             CheckThumbnailListPosition();
         }
@@ -264,15 +273,17 @@ namespace SimplePhotoEditor.ViewModels
 			bmi.UriSource = new Uri(path);
 			bmi.EndInit();
 			PreviewImage = bmi;
+            SessionService.CurrentTempFilePath = path;
 		}
 
         private void ImageSelected()
         {
-            if (MetaDataViewModel == null)
-            {
-                MetaDataViewModel = new MetadataViewModel(RegionManager, DialogService, PageKeys.SingleImage);
-            }
-            metadataViewModel.FilePath = FilePath;
+            //if (MetaDataViewModel == null)
+            //{
+            //    MetaDataViewModel = new MetadataViewModel(RegionManager, DialogService, PageKeys.SingleImage);
+            //}
+            //metadataViewModel.FilePath = FilePath;
+            SessionService.CurrentImagePath = FilePath;
         }
 
         private Visibility applyCancelVisibility = Visibility.Hidden;

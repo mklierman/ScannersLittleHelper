@@ -20,6 +20,7 @@ using System.Windows.Media.Imaging;
 using DNTScanner.Core;
 using System.Runtime.InteropServices;
 using System.Linq;
+using SimplePhotoEditor.Contracts.Services;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -27,10 +28,13 @@ namespace SimplePhotoEditor.ViewModels
     {
         private IRegionManager RegionManager;
         private IDialogService DialogService;
-        public ScanViewModel(IRegionManager regionManager, IDialogService dialogService)
+        private ISessionService SessionService;
+
+        public ScanViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService)
         {
             RegionManager = regionManager;
             DialogService = dialogService;
+            SessionService = sessionService;
         }
 
         public bool IsNavigationTarget(NavigationContext navigationContext)
@@ -40,6 +44,7 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnNavigatedFrom(NavigationContext navigationContext)
         {
+            SessionService.PeviousView = PageKeys.Scan;
         }
 
         public void OnNavigatedTo(NavigationContext navigationContext)

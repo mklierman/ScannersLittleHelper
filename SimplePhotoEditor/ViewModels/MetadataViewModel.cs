@@ -6,6 +6,7 @@ using Prism.Mvvm;
 using Prism.Regions;
 using Prism.Services.Dialogs;
 using SimplePhotoEditor.Constants;
+using SimplePhotoEditor.Contracts.Services;
 using SimplePhotoEditor.Helpers;
 using SimplePhotoEditor.Models;
 using SimplePhotoEditor.Views;
@@ -32,6 +33,7 @@ namespace SimplePhotoEditor.ViewModels
         private IDialogCoordinator dialogCoordinator = new DialogCoordinator();
         private IDialogService DialogService;
         private IRegionManager regionManager;
+        private ISessionService sessionService;
         private ObservableCollection<string> saveToFolderOptions = new ObservableCollection<string>();
         private ObservableCollection<string> tags = new ObservableCollection<string>();
         private SingleImageViewModel SingleImageViewModel;
@@ -47,11 +49,12 @@ namespace SimplePhotoEditor.ViewModels
         private string title;
         private ThumbnailViewModel ThumbnailViewModel;
 
-        public MetadataViewModel(IRegionManager regionManager, IDialogService dialogService, string callingPage = "")
+        public MetadataViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService)
         {
             this.regionManager = regionManager;
             DialogService = dialogService;
             CallingPage = callingPage;
+            this.sessionService = sessionService;
         }
 
         public ICommand AddTagCommand => addTagCommand ?? (addTagCommand = new DelegateCommand(AddTag));
@@ -321,7 +324,7 @@ namespace SimplePhotoEditor.ViewModels
             ThumbnailViewModel = (ThumbnailViewModel)thumbnailView.DataContext;
         }
 
-        private async void OnSave(string GoToNextImage = "")
+        private void OnSave(string GoToNextImage = "")
         {
             ImageInfo dataToSave = new ImageInfo();
             dataToSave.SelectedSaveToFolder = SelectedSaveToFolder;
@@ -335,7 +338,7 @@ namespace SimplePhotoEditor.ViewModels
             dataToSave.Title = Title;
 
             IsSaving = true;
-            _ = Task.Run(async () => await SaveImage(dataToSave));
+            SaveImage(dataToSave);
             UpdateThumbnailDetails(GoToNextImage, dataToSave);
             if (CallingPage == PageKeys.SingleImage)
             {
@@ -361,49 +364,58 @@ namespace SimplePhotoEditor.ViewModels
             SaveToFolderOptions.Add(newDir);
         }
 
-        private async Task SaveImage(ImageInfo data)
+        private void SaveImage(ImageInfo data)
         {
-            ShellFile shellFile = ShellFile.FromFilePath(data.FilePath);
+            try
+            {
+                ShellFile shellFile = ShellFile.FromFilePath(data.FilePath);
 
-            if (data.Title != shellFile.Properties.System.Title.Value)
-            {
-                shellFile.Properties.System.Title.Value = data.Title;
-            }
-            if (data.Subject != shellFile.Properties.System.Subject.Value)
-            {
-                shellFile.Properties.System.Subject.Value = data.Subject;
-            }
-            if (data.Comment != shellFile.Properties.System.Comment.Value)
-            {
-                shellFile.Properties.System.Comment.Value = data.Comment;
-            }
-            if (data.DateTaken != Convert.ToDateTime(shellFile.Properties.System.Photo.DateTaken.Value))
-            {
-                shellFile.Properties.System.Photo.DateTaken.Value = data.DateTaken;
-            }
-            if (data.Tags?.Count > 0)
-            {
-                string[] tagsArray = new string[data.Tags.Count];
-                data.Tags?.CopyTo(tagsArray, 0);
-                if (tagsArray != shellFile.Properties.System.Keywords.Value && tagsArray?.Length > 0)
+                if (data.Title != shellFile.Properties.System.Title.Value)
                 {
-                    shellFile.Properties.System.Keywords.Value = tagsArray;
+                    shellFile.Properties.System.Title.Value = data.Title;
+                }
+                if (data.Subject != shellFile.Properties.System.Subject.Value)
+                {
+                    shellFile.Properties.System.Subject.Value = data.Subject;
+                }
+                if (data.Comment != shellFile.Properties.System.Comment.Value)
+                {
+                    shellFile.Properties.System.Comment.Value = data.Comment;
+                }
+                if (data.DateTaken != Convert.ToDateTime(shellFile.Properties.System.Photo.DateTaken.Value))
+                {
+                    shellFile.Properties.System.Photo.DateTaken.Value = data.DateTaken;
+                }
+                if (data.Tags?.Count > 0)
+                {
+                    string[] tagsArray = new string[data.Tags.Count];
+                    data.Tags?.CopyTo(tagsArray, 0);
+                    if (tagsArray != shellFile.Properties.System.Keywords.Value && tagsArray?.Length > 0)
+                    {
+                        shellFile.Properties.System.Keywords.Value = tagsArray;
+                    }
+                }
+                
+                shellFile.Dispose();
+                File.Move(sessionService.CurrentTempFilePath, data.FilePath);
+                if (data.FileName != Path.GetFileName(data.FilePath) || Path.GetDirectoryName(data.FilePath) != data.SelectedSaveToFolder)
+                {
+                    var newPath = data.SelectedSaveToFolder + "\\" + data.FileName;
+                    File.Move(data.FilePath, newPath);
+                    if (File.Exists(newPath))
+                    {
+                        data.FilePath = newPath;
+                    }
+                    else
+                    {
+                        //Something went wrong.
+                        Console.WriteLine("Something went wrong.");
+                    }
                 }
             }
-            shellFile.Dispose();
-
-            if (data.FileName != Path.GetFileName(data.FilePath) || Path.GetDirectoryName(data.FilePath) != data.SelectedSaveToFolder)
+            catch (Exception ex)
             {
-                var newPath = data.SelectedSaveToFolder + "\\" + data.FileName;
-                File.Move(data.FilePath, newPath);
-                if (File.Exists(newPath))
-                {
-                    data.FilePath = newPath;
-                }
-                else
-                {
-                    //Something went wrong.
-                }
+                Console.WriteLine("Exception occured: " + ex.Message);
             }
         }
 
