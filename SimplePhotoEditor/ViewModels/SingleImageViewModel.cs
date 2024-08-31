@@ -92,7 +92,7 @@ namespace SimplePhotoEditor.ViewModels
 				image.Write(tempRotatePath);
 			}
 			RefreshPreviewImage(tempRotatePath);
-			File.Delete(tempRotatePath);
+			//File.Delete(tempRotatePath);
 		}
 
 		public ICommand RotateRightCommand => rotateRightCommand ?? (rotateRightCommand = new DelegateCommand(RotateRight));
@@ -188,6 +188,7 @@ namespace SimplePhotoEditor.ViewModels
         private void CheckThumbnailListPosition()
         {
             GetThumbnailViewModel();
+            FilePath = ThumbnailViewModel.SelectedImage?.FilePath;
             NextImageEnabled = ThumbnailViewModel.Images?.IndexOf(ThumbnailViewModel.SelectedImage) < ThumbnailViewModel.Images?.Count - 1;
             PreviousImageEnabled = ThumbnailViewModel.Images?.IndexOf(ThumbnailViewModel.SelectedImage) > 0;
         }
@@ -274,6 +275,7 @@ namespace SimplePhotoEditor.ViewModels
 			bmi.EndInit();
 			PreviewImage = bmi;
             SessionService.CurrentTempFilePath = path;
+            tempFilePath = path;
 		}
 
         private void ImageSelected()
