@@ -60,11 +60,12 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        public ThumbnailViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService)
+        public ThumbnailViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService, MetadataViewModel metadataViewModel)
         {
             DialogService = dialogService;
             RegionManager = regionManager;
             SessionService = sessionService;
+            MetaDataViewModel = metadataViewModel;
             object lockObj = new object();
             BindingOperations.EnableCollectionSynchronization(Images, lockObj);
             RestoreLastThumbnailFolder();
@@ -159,13 +160,15 @@ namespace SimplePhotoEditor.ViewModels
             set
             {
                 SetProperty(ref selectedImage, value);
-                SessionService.CurrentImagePath = SelectedImage.FilePath;
-                //if (MetaDataViewModel == null)
-                //{
-                //    MetaDataViewModel = new MetadataViewModel(RegionManager, DialogService, PageKeys.Thumbnail);
-                //}
-                //MetaDataViewModel.CallingPage = PageKeys.Thumbnail;
-                //MetaDataViewModel.FilePath = value?.FilePath;
+                if (value != null)
+                {
+                    SessionService.CurrentImagePath = value.FilePath;
+                    if (MetaDataViewModel != null)
+                    {
+                        MetaDataViewModel.CallingPage = PageKeys.Thumbnail;
+                        MetaDataViewModel.FilePath = value.FilePath;
+                    }
+                }
             }
         }
 

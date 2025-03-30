@@ -49,11 +49,12 @@ namespace SimplePhotoEditor.ViewModels
         private string cancelButtonText;
         private Stack<EditUndoModel> imageUndoStack = new Stack<EditUndoModel>();
 
-        public SingleImageViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService)
+        public SingleImageViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService, MetadataViewModel metadataViewModel)
         {
             DialogService = dialogService;
             RegionManager = regionManager;
             SessionService = sessionService;
+            MetaDataViewModel = metadataViewModel;
         }
 
         public ICommand AutoCropCommand => autoCropCommand ?? (autoCropCommand = new DelegateCommand(AutoCrop));
@@ -64,19 +65,20 @@ namespace SimplePhotoEditor.ViewModels
             {
                 image.Trim(new Percentage(10));
                 image.AutoLevel();
-                image.Rotate(90);
+                //image.Rotate(90);
 
                 var tempCroppedImagePath = Path.GetTempFileName();
                 image.Write(tempCroppedImagePath);
                 var editModel = new EditUndoModel(PreviewImage, tempCroppedImagePath, null);
                 imageUndoStack.Push(editModel);
 
-                var bmi = new BitmapImage();
-                bmi.BeginInit();
-                bmi.CacheOption = BitmapCacheOption.OnLoad;
-                bmi.UriSource = new Uri(tempCroppedImagePath);
-                bmi.EndInit();
-                PreviewImage = bmi;
+                //var bmi = new BitmapImage();
+                //bmi.BeginInit();
+                //bmi.CacheOption = BitmapCacheOption.OnLoad;
+                //bmi.UriSource = new Uri(tempCroppedImagePath);
+                //bmi.EndInit();
+                //PreviewImage = bmi;
+                RefreshPreviewImage(tempCroppedImagePath);
             }
         }
 
@@ -135,15 +137,16 @@ namespace SimplePhotoEditor.ViewModels
             get => filePath;
             set
             {
-                if (filePath != value)
+                if (SetProperty(ref filePath, value))
                 {
-                    filePath = value;
-                    RaisePropertyChanged(nameof(FilePath));
-                    if (File.Exists(FilePath))
+                    if (!string.IsNullOrEmpty(value))
                     {
                         GetImagePreview();
-                        ImageSelected();
-                        FileName = Path.GetFileName(FilePath);
+                        if (MetaDataViewModel != null)
+                        {
+                            MetaDataViewModel.CallingPage = PageKeys.SingleImage;
+                            MetaDataViewModel.FilePath = value;
+                        }
                     }
                 }
             }
@@ -314,6 +317,23 @@ namespace SimplePhotoEditor.ViewModels
 
         private void ApplyCrop()
         {
+
+            ApplyCancelVisibility = Visibility.Hidden;
+            var tempCroppedImagePath = Path.GetTempFileName();
+            using (var image = new MagickImage(tempFilePath))
+            {
+                var width = 50;
+                var height = 100;
+                var rect = cropper.GetCropRect();
+                IMagickGeometry magickGeometry = new MagickGeometry(rect.X, rect.Y, rect.Width, rect.Height);
+                image.Crop(magickGeometry);
+                image.RePage();
+                image.Write(tempCroppedImagePath);
+
+            }
+            CropSelected = false;
+            RefreshPreviewImage(tempCroppedImagePath);
+            return;
             CropLayer cropLayer = cropper.ApplyCrop();
             //FilePath, Path.GetDirectoryName(FilePath) + "\\cropped.jpg"
             ApplyCancelVisibility = Visibility.Hidden;
@@ -328,18 +348,19 @@ namespace SimplePhotoEditor.ViewModels
                 imageFactory.Load(FilePath);
             }
             imageFactory.Crop(cropLayer);
-            var tempCroppedImagePath = Path.GetTempFileName();
+            //var tempCroppedImagePath = Path.GetTempFileName();
             imageFactory.Save(tempCroppedImagePath);
             var editModel = new EditUndoModel(PreviewImage, tempCroppedImagePath, cropLayer);
             imageUndoStack.Push(editModel);
 
-            var bmi = new BitmapImage();
-            bmi.BeginInit();
-            bmi.CacheOption = BitmapCacheOption.OnLoad;
-            bmi.UriSource = new Uri(tempCroppedImagePath);
-            bmi.EndInit();
-            PreviewImage = bmi;
+            //var bmi = new BitmapImage();
+            //bmi.BeginInit();
+            //bmi.CacheOption = BitmapCacheOption.OnLoad;
+            //bmi.UriSource = new Uri(tempCroppedImagePath);
+            //bmi.EndInit();
+            //PreviewImage = bmi;
             CropSelected = false;
+            RefreshPreviewImage(tempCroppedImagePath);
         }
 
         private void CancelCrop()

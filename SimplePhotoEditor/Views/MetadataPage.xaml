@@ -83,6 +83,7 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 TabIndex="101"
+                IsEnabled="{Binding IsPngFile, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=IsEnabled}"
                 Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
                 Grid.Row="2"
@@ -95,6 +96,7 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 TabIndex="102"
+                IsEnabled="{Binding IsPngFile, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=IsEnabled}"
                 Text="{Binding Subject, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
                 Grid.Row="3"
@@ -107,6 +109,7 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 TabIndex="103"
+                IsEnabled="{Binding IsPngFile, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=IsEnabled}"
                 Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
                 Grid.Row="4"
@@ -131,6 +134,7 @@
                 Grid.Column="1"
                 Margin="{StaticResource GridMargin}"
                 BorderBrush="{StaticResource MahApps.Brushes.TextBox.Border}"
+                IsEnabled="{Binding IsPngFile, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=IsEnabled}"
                 ItemsSource="{Binding Tags, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 SelectedValue="{Binding SelectedTag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Label
@@ -152,10 +156,12 @@
                     Grid.Column="0"
                     KeyDown="TagTextboxKeyDown"
                     TabIndex="105"
+                    IsEnabled="{Binding IsPngFile, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=IsEnabled}"
                     Text="{Binding Tag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Button
                     Grid.Column="1"
                     Command="{Binding AddTagCommand}"
+                    IsEnabled="{Binding IsPngFile, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=IsEnabled}"
                     TabIndex="106">
                     <TextBlock
                         FontFamily="Segoe MDL2 Assets"
@@ -165,6 +171,7 @@
                 <Button
                     Grid.Column="2"
                     Command="{Binding RemoveTagCommand}"
+                    IsEnabled="{Binding IsPngFile, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=IsEnabled}"
                     TabIndex="107">
                     <TextBlock
                         FontFamily="Segoe MDL2 Assets"

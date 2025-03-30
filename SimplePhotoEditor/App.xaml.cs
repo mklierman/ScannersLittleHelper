@@ -80,6 +80,9 @@ namespace SimplePhotoEditor
             containerRegistry.Register<IThemeSelectorService, ThemeSelectorService>();
             containerRegistry.Register<ISessionService, SessionService>();
 
+            // ViewModels
+            containerRegistry.RegisterSingleton<MetadataViewModel>();
+
             // Views
             containerRegistry.RegisterForNavigation<SettingsPage, SettingsViewModel>(PageKeys.Settings);
             containerRegistry.RegisterForNavigation<ThumbnailPage, ThumbnailViewModel>(PageKeys.Thumbnail);
@@ -87,6 +90,11 @@ namespace SimplePhotoEditor
             containerRegistry.RegisterForNavigation<ScanPage, ScanViewModel>(PageKeys.Scan);
             containerRegistry.RegisterForNavigation<MetadataPage, MetadataViewModel>();
             containerRegistry.RegisterForNavigation<ShellWindow, ShellViewModel>();
+
+            // Dialogs
+            containerRegistry.RegisterDialog<NewFolderDialog, NewFolderDialogViewModel>("InputDialog");
+            containerRegistry.RegisterDialog<ErrorDialog, ErrorDialogViewModel>("ErrorDialog");
+            containerRegistry.RegisterDialog<ConfirmationDialog, ConfirmationDialogViewModel>("ConfirmationDialog");
 
             // Configuration
             var configuration = BuildConfiguration();
@@ -97,8 +105,6 @@ namespace SimplePhotoEditor
             // Register configurations to IoC
             containerRegistry.RegisterInstance<IConfiguration>(configuration);
             containerRegistry.RegisterInstance<AppConfig>(appConfig);
-
-            containerRegistry.RegisterDialog<NewFolderDialog, NewFolderDialogViewModel>("InputDialog");
         }
 
         private IConfiguration BuildConfiguration()
