@@ -589,20 +589,28 @@ namespace SimplePhotoEditor.ViewModels
                     });
                 }
 
-                string extension = Path.GetExtension(FilePath).ToLower();
-                if (extension == ".png")
+                // Get the current image bytes from SingleImageViewModel
+                GetSingleImageViewModel();
+                if (SingleImageViewModel != null)
                 {
-                    SavePngMetadata(data, FilePath);
-                    if (newFilePath != FilePath)
-                    {
-                        File.Copy(FilePath, newFilePath, true);
-                        SavePngMetadata(data, newFilePath);
-                    }
+                    // Write the current image bytes to the new file
+                    File.WriteAllBytes(newFilePath, SingleImageViewModel.CurrentImageBytes);
                 }
                 else
                 {
-                    // Save metadata to the original file using Windows Shell API
-                    using (var shellFile = ShellFile.FromFilePath(FilePath))
+                    // If we can't get the current bytes, copy the original file
+                    File.Copy(FilePath, newFilePath, true);
+                }
+
+                string extension = Path.GetExtension(FilePath).ToLower();
+                if (extension == ".png")
+                {
+                    SavePngMetadata(data, newFilePath);
+                }
+                else
+                {
+                    // Save metadata to the new file using Windows Shell API
+                    using (var shellFile = ShellFile.FromFilePath(newFilePath))
                     {
                         try
                         {
@@ -670,78 +678,8 @@ namespace SimplePhotoEditor.ViewModels
                         }
                         catch (Exception ex)
                         {
-                            Debug.WriteLine($"Error saving metadata to original file: {ex.Message}");
-                            var dialogParams = new DialogParameters
-                            {
-                                { "message", $"Unable to save metadata: {ex.Message}\nThe file format might not support all metadata properties." }
-                            };
-                            DialogService.ShowDialog("ErrorDialog", dialogParams, null);
-                            return;
-                        }
-                    }
-
-                    // Copy the file to the new location if needed
-                    if (newFilePath != FilePath)
-                    {
-                        File.Copy(FilePath, newFilePath, true);
-                        
-                        // Update metadata in the new file location
-                        using (var shellFile = ShellFile.FromFilePath(newFilePath))
-                        {
-                            try
-                            {
-                                // Try to set each property individually and catch specific failures
-                                if (!string.IsNullOrEmpty(data.Title))
-                                {
-                                    try 
-                                    { 
-                                        shellFile.Properties.System.Title.Value = data.Title;
-                                    }
-                                    catch (Exception) { /* Title not supported */ }
-                                }
-
-                                if (!string.IsNullOrEmpty(data.Subject))
-                                {
-                                    try 
-                                    { 
-                                        shellFile.Properties.System.Subject.Value = data.Subject;
-                                    }
-                                    catch (Exception) { /* Subject not supported */ }
-                                }
-
-                                if (!string.IsNullOrEmpty(data.Comment))
-                                {
-                                    try 
-                                    { 
-                                        shellFile.Properties.System.Comment.Value = data.Comment;
-                                    }
-                                    catch (Exception) { /* Comment not supported */ }
-                                }
-
-                                if (data.DateTaken.HasValue)
-                                {
-                                    try 
-                                    { 
-                                        shellFile.Properties.System.Photo.DateTaken.Value = data.DateTaken.Value;
-                                    }
-                                    catch (Exception) { /* DateTaken not supported */ }
-                                }
-
-                                if (data.Tags != null && data.Tags.Any())
-                                {
-                                    var tagsArray = data.Tags.ToArray();
-                                    try 
-                    {
-                        shellFile.Properties.System.Keywords.Value = tagsArray;
-                                    }
-                                    catch (Exception) { /* Tags not supported */ }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.WriteLine($"Error saving metadata: {ex.Message}");
-                                throw new Exception("Unable to save metadata. The file format might not support all metadata properties.", ex);
-                            }
+                            Debug.WriteLine($"Error saving metadata: {ex.Message}");
+                            throw new Exception("Unable to save metadata. The file format might not support all metadata properties.", ex);
                         }
                     }
                 }

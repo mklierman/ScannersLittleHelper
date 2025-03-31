@@ -17,9 +17,12 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using System.Windows.Controls;
 using ImageMagick;
 using System.Threading.Tasks;
 using SimplePhotoEditor.Contracts.Services;
+using System.Diagnostics;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -48,6 +51,16 @@ namespace SimplePhotoEditor.ViewModels
         private string applyButtonText;
         private string cancelButtonText;
         private Stack<EditUndoModel> imageUndoStack = new Stack<EditUndoModel>();
+        private byte[] currentImageBytes;
+        private bool isDrawingSkewLine = false;
+        private Point skewStartPoint;
+        private Line skewLine;
+        private bool skewLineVisible = false;
+        private bool isInSkewMode = false;
+        private string skewInstructions = "Draw a line along what should be horizontal";
+        private Visibility skewInstructionsVisibility = Visibility.Collapsed;
+
+        public byte[] CurrentImageBytes => currentImageBytes;
 
         public SingleImageViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService, MetadataViewModel metadataViewModel)
         {
@@ -61,24 +74,29 @@ namespace SimplePhotoEditor.ViewModels
 
         private void AutoCrop()
         {
-            using (var image = new MagickImage(FilePath))
+            try
             {
-                image.Trim(new Percentage(10));
-                image.AutoLevel();
-                //image.Rotate(90);
-
-                var tempCroppedImagePath = Path.GetTempFileName();
-                image.Write(tempCroppedImagePath);
-                var editModel = new EditUndoModel(PreviewImage, tempCroppedImagePath, null);
-                imageUndoStack.Push(editModel);
-
-                //var bmi = new BitmapImage();
-                //bmi.BeginInit();
-                //bmi.CacheOption = BitmapCacheOption.OnLoad;
-                //bmi.UriSource = new Uri(tempCroppedImagePath);
-                //bmi.EndInit();
-                //PreviewImage = bmi;
-                RefreshPreviewImage(tempCroppedImagePath);
+                using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
+                {
+                    // Trim the image (removes edges that are the same color as the corner pixels)
+                    image.Trim();
+                    image.RePage();
+                    
+                    // Store the result
+                    currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+                    
+                    // Add to undo stack
+                    var editModel = new EditUndoModel(PreviewImage, null, null);
+                    imageUndoStack.Push(editModel);
+                }
+                
+                RefreshPreviewImageFromBytes(currentImageBytes);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in auto-crop: {ex.Message}");
+                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
             }
         }
 
@@ -87,33 +105,49 @@ namespace SimplePhotoEditor.ViewModels
 
 		private void RotateLeft()
 		{
-			var tempRotatePath = Path.GetTempFileName();
-			using (var image = new MagickImage(tempFilePath))
+			try
 			{
-				image.Rotate(-90);
-				image.Write(tempRotatePath);
+				using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(tempFilePath ?? FilePath)))
+				{
+					image.Rotate(-90);
+					currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+				}
+				
+				var editModel = new EditUndoModel(PreviewImage, null, null);
+				imageUndoStack.Push(editModel);
+				RefreshPreviewImageFromBytes(currentImageBytes);
 			}
-			RefreshPreviewImage(tempRotatePath);
-			//File.Delete(tempRotatePath);
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"Error rotating left: {ex.Message}");
+				throw;
+			}
 		}
 
 		public ICommand RotateRightCommand => rotateRightCommand ?? (rotateRightCommand = new DelegateCommand(RotateRight));
 
 		private void RotateRight()
 		{
-            var tempRotatePath = Path.GetTempFileName();
-			using (var image = new MagickImage(tempFilePath))
+			try
 			{
-				image.Rotate(90);
-				image.Write(tempRotatePath);
-                
+				using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(tempFilePath ?? FilePath)))
+				{
+					image.Rotate(90);
+					currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+				}
+				
+				var editModel = new EditUndoModel(PreviewImage, null, null);
+				imageUndoStack.Push(editModel);
+				RefreshPreviewImageFromBytes(currentImageBytes);
 			}
-			RefreshPreviewImage(tempRotatePath);
-            
-            //File.Delete(tempRotatePath);
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"Error rotating right: {ex.Message}");
+				throw;
+			}
 		}
 
-		public ICommand SkewCommand => skewCommand ?? (skewCommand = new DelegateCommand(GetImagePreview));
+		public ICommand SkewCommand => skewCommand ?? (skewCommand = new DelegateCommand(StartSkew));
         public ICommand UndoCommand => undoCommand ?? (undoCommand = new DelegateCommand(UndoEdit));
         public ICommand NextImageCommand => nextImageCommand ?? (nextImageCommand = new DelegateCommand(SelectNextImage));
         public ICommand PreviousImageCommand => previousImageCommand ?? (previousImageCommand = new DelegateCommand(SelectPreviousImage));
@@ -242,44 +276,46 @@ namespace SimplePhotoEditor.ViewModels
 
         private void GetImagePreview()
         {
-            tempFilePath = Path.GetTempFileName();
-            //var screenWidth = System.Windows.SystemParameters.PrimaryScreenWidth;
-            //var screenHeight = System.Windows.SystemParameters.PrimaryScreenHeight;
-
-            using (var image = new MagickImage(FilePath))
+            try
             {
-				image.Write(tempFilePath);
-			}
-                //{
-                //             image.Thumbnail((int)screenWidth, (int)screenHeight);
-                //	var tempImagePath = Path.GetTempFileName();
-                //	image.Write(tempImagePath);
+                currentImageBytes = File.ReadAllBytes(FilePath);
+                RefreshPreviewImageFromBytes(currentImageBytes);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error getting image preview: {ex.Message}");
+                throw;
+            }
+        }
 
-                //	var bmi = new BitmapImage();
-                //	bmi.BeginInit();
-                //	bmi.CacheOption = BitmapCacheOption.OnLoad;
-                //	bmi.UriSource = new Uri(tempImagePath);
-                //	bmi.EndInit();
-                //	PreviewImage = bmi;
-                //}
-
-                //File.Copy(FilePath, tempFilePath);
-
-
-            RefreshPreviewImage(tempFilePath);
-		}
-
-        private void RefreshPreviewImage(string path)
+        private void RefreshPreviewImageFromBytes(byte[] imageBytes)
         {
-			var bmi = new BitmapImage();
-			bmi.BeginInit();
-			bmi.CacheOption = BitmapCacheOption.OnLoad;
-			bmi.UriSource = new Uri(path);
-			bmi.EndInit();
-			PreviewImage = bmi;
-            SessionService.CurrentTempFilePath = path;
-            tempFilePath = path;
-		}
+            try
+            {
+                // Dispose of the previous image if it exists
+                if (PreviewImage is BitmapImage previousImage)
+                {
+                    previousImage.StreamSource?.Dispose();
+                    previousImage.CacheOption = BitmapCacheOption.None;
+                    previousImage.UriSource = null;
+                }
+
+                var bmi = new BitmapImage();
+                using (var stream = new MemoryStream(imageBytes))
+                {
+                    bmi.BeginInit();
+                    bmi.CacheOption = BitmapCacheOption.OnLoad;
+                    bmi.StreamSource = stream;
+                    bmi.EndInit();
+                }
+                PreviewImage = bmi;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error refreshing preview image: {ex.Message}");
+                throw;
+            }
+        }
 
         private void ImageSelected()
         {
@@ -317,50 +353,57 @@ namespace SimplePhotoEditor.ViewModels
 
         private void ApplyCrop()
         {
-
-            ApplyCancelVisibility = Visibility.Hidden;
-            var tempCroppedImagePath = Path.GetTempFileName();
-            using (var image = new MagickImage(tempFilePath))
+            try
             {
-                var width = 50;
-                var height = 100;
-                var rect = cropper.GetCropRect();
-                IMagickGeometry magickGeometry = new MagickGeometry(rect.X, rect.Y, rect.Width, rect.Height);
-                image.Crop(magickGeometry);
-                image.RePage();
-                image.Write(tempCroppedImagePath);
+                // Remove the crop UI first
+                cropper.RemoveCropFromCur();
+                ApplyCancelVisibility = Visibility.Hidden;
+                
+                using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
+                {
+                    var rect = cropper.GetCropRect();
+                    Debug.WriteLine($"Crop rectangle: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
+                    Debug.WriteLine($"Image dimensions: Width={image.Width}, Height={image.Height}");
+                    
+                    if (rect.Width <= 0 || rect.Height <= 0)
+                    {
+                        Debug.WriteLine("Invalid crop dimensions detected");
+                        return;
+                    }
 
+                    // Get the actual image dimensions from the preview
+                    var previewImage = PreviewImage as BitmapImage;
+                    if (previewImage == null) return;
+
+                    // Calculate the scale factors between preview and actual image
+                    double scaleX = image.Width / previewImage.PixelWidth;
+                    double scaleY = image.Height / previewImage.PixelHeight;
+
+                    // Scale the crop rectangle to match the actual image dimensions
+                    int scaledX = (int)(rect.X * scaleX);
+                    int scaledY = (int)(rect.Y * scaleY);
+                    int scaledWidth = (int)(rect.Width * scaleX);
+                    int scaledHeight = (int)(rect.Height * scaleY);
+
+                    Debug.WriteLine($"Scaled crop rectangle: X={scaledX}, Y={scaledY}, Width={scaledWidth}, Height={scaledHeight}");
+
+                    IMagickGeometry magickGeometry = new MagickGeometry(scaledX, scaledY, scaledWidth, scaledHeight);
+                    image.Crop(magickGeometry);
+                    image.RePage();
+                    currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+                    
+                    var editModel = new EditUndoModel(PreviewImage, null, null);
+                    imageUndoStack.Push(editModel);
+                }
+                CropSelected = false;
+                RefreshPreviewImageFromBytes(currentImageBytes);
             }
-            CropSelected = false;
-            RefreshPreviewImage(tempCroppedImagePath);
-            return;
-            CropLayer cropLayer = cropper.ApplyCrop();
-            //FilePath, Path.GetDirectoryName(FilePath) + "\\cropped.jpg"
-            ApplyCancelVisibility = Visibility.Hidden;
-
-            ImageProcessor.ImageFactory imageFactory = new ImageFactory();
-            if (imageUndoStack.Count > 0)
+            catch (Exception ex)
             {
-                imageFactory.Load(imageUndoStack.Peek().TempFilePath);
+                Debug.WriteLine($"Error applying crop: {ex.Message}");
+                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
             }
-            else
-            {
-                imageFactory.Load(FilePath);
-            }
-            imageFactory.Crop(cropLayer);
-            //var tempCroppedImagePath = Path.GetTempFileName();
-            imageFactory.Save(tempCroppedImagePath);
-            var editModel = new EditUndoModel(PreviewImage, tempCroppedImagePath, cropLayer);
-            imageUndoStack.Push(editModel);
-
-            //var bmi = new BitmapImage();
-            //bmi.BeginInit();
-            //bmi.CacheOption = BitmapCacheOption.OnLoad;
-            //bmi.UriSource = new Uri(tempCroppedImagePath);
-            //bmi.EndInit();
-            //PreviewImage = bmi;
-            CropSelected = false;
-            RefreshPreviewImage(tempCroppedImagePath);
         }
 
         private void CancelCrop()
@@ -374,7 +417,154 @@ namespace SimplePhotoEditor.ViewModels
         {
             if (imageUndoStack.Count > 0)
             {
-                PreviewImage = imageUndoStack.Pop().ImageSource;
+                var previousState = imageUndoStack.Pop();
+                if (previousState.ImageSource is BitmapImage previousImage)
+                {
+                    // Restore the original image bytes
+                    currentImageBytes = File.ReadAllBytes(FilePath);
+                    PreviewImage = previousImage;
+                }
+            }
+        }
+
+        public bool SkewLineVisible
+        {
+            get => skewLineVisible;
+            set => SetProperty(ref skewLineVisible, value);
+        }
+
+        public bool IsInSkewMode
+        {
+            get => isInSkewMode;
+            set => SetProperty(ref isInSkewMode, value);
+        }
+
+        public string SkewInstructions
+        {
+            get => skewInstructions;
+            set => SetProperty(ref skewInstructions, value);
+        }
+
+        public Visibility SkewInstructionsVisibility
+        {
+            get => skewInstructionsVisibility;
+            set => SetProperty(ref skewInstructionsVisibility, value);
+        }
+
+        private void StartSkew()
+        {
+            try
+            {
+                if (CurrentImageBytes == null) return;
+
+                // Create a new line for skew correction
+                skewLine = new Line
+                {
+                    Stroke = Brushes.Red,
+                    StrokeThickness = 2,
+                    Visibility = Visibility.Visible
+                };
+
+                // Add the line to the image container
+                var imageContainer = GetImageContainer();
+                if (imageContainer != null)
+                {
+                    imageContainer.Children.Add(skewLine);
+                    SkewLineVisible = true;
+                    IsInSkewMode = true;
+                    SkewInstructionsVisibility = Visibility.Visible;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error starting skew: {ex.Message}");
+                var dialogParams = new DialogParameters
+                {
+                    { "message", $"Failed to start skew correction: {ex.Message}" }
+                };
+                DialogService.ShowDialog("ErrorDialog", dialogParams, null);
+            }
+        }
+
+        private Panel GetImageContainer()
+        {
+            var singleImageView = RegionManager.Regions[Regions.Main].GetView(PageKeys.SingleImage) as SingleImagePage;
+            return singleImageView?.FindName("ImageContainer") as Panel;
+        }
+
+        public void HandleSkewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!SkewLineVisible) return;
+
+            isDrawingSkewLine = true;
+            skewStartPoint = e.GetPosition(sender as IInputElement);
+            skewLine.X1 = skewStartPoint.X;
+            skewLine.Y1 = skewStartPoint.Y;
+            skewLine.X2 = skewStartPoint.X;
+            skewLine.Y2 = skewStartPoint.Y;
+        }
+
+        public void HandleSkewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!isDrawingSkewLine) return;
+
+            var currentPoint = e.GetPosition(sender as IInputElement);
+            skewLine.X2 = currentPoint.X;
+            skewLine.Y2 = currentPoint.Y;
+        }
+
+        public void HandleSkewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!isDrawingSkewLine) return;
+
+            isDrawingSkewLine = false;
+            var endPoint = e.GetPosition(sender as IInputElement);
+            
+            // Calculate the angle between the line and the horizontal axis
+            double deltaX = endPoint.X - skewStartPoint.X;
+            double deltaY = endPoint.Y - skewStartPoint.Y;
+            
+            // Calculate the angle needed to make the line horizontal
+            // atan2 gives us the angle from the horizontal axis (-180 to 180)
+            double angle = -Math.Atan2(deltaY, deltaX) * 180 / Math.PI;
+
+            // Apply the skew correction
+            ApplySkewCorrection(angle);
+
+            // Remove the line and reset skew mode
+            var imageContainer = GetImageContainer();
+            if (imageContainer != null)
+            {
+                imageContainer.Children.Remove(skewLine);
+                SkewLineVisible = false;
+                IsInSkewMode = false;
+                SkewInstructionsVisibility = Visibility.Collapsed;
+            }
+        }
+
+        private void ApplySkewCorrection(double angle)
+        {
+            try
+            {
+                using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
+                {
+                    // Rotate the image to correct the skew
+                    image.Rotate(angle);
+                    currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+                    
+                    var editModel = new EditUndoModel(PreviewImage, null, null);
+                    imageUndoStack.Push(editModel);
+                    RefreshPreviewImageFromBytes(currentImageBytes);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error applying skew correction: {ex.Message}");
+                var dialogParams = new DialogParameters
+                {
+                    { "message", $"Failed to apply skew correction: {ex.Message}" }
+                };
+                DialogService.ShowDialog("ErrorDialog", dialogParams, null);
             }
         }
     }

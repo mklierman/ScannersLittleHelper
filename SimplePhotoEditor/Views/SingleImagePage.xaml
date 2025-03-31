@@ -8,6 +8,7 @@
     xmlns:properties="clr-namespace:SimplePhotoEditor.Properties"
     xmlns:viewmodels="clr-namespace:SimplePhotoEditor.ViewModels"
     xmlns:views="clr-namespace:SimplePhotoEditor.Views"
+    xmlns:converters="clr-namespace:SimplePhotoEditor.Converters"
     x:Name="SingleImage"
     d:DataContext="{d:DesignInstance Type=viewmodels:SingleImageViewModel}"
     d:DesignHeight="450"
@@ -17,6 +18,7 @@
     mc:Ignorable="d">
     <UserControl.Resources>
         <Thickness x:Key="GridMargin">2</Thickness>
+        <converters:BooleanToCursorConverter x:Key="BooleanToCursorConverter" />
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -62,15 +64,30 @@
                                 Text="&#xEDD9;" />
                         </Button>
                         <Grid
+                            x:Name="ImageContainer"
                             Grid.Column="1"
                             Margin="5"
-                            Background="{StaticResource MahApps.Brushes.Flyout.Background}">
+                            Background="{StaticResource MahApps.Brushes.Flyout.Background}"
+                            MouseLeftButtonDown="ImageContainer_MouseLeftButtonDown"
+                            MouseLeftButtonUp="ImageContainer_MouseLeftButtonUp"
+                            MouseMove="ImageContainer_MouseMove"
+                            Cursor="{Binding IsInSkewMode, Converter={StaticResource BooleanToCursorConverter}, ConverterParameter=Cross}">
                             <Image
-                                x:Name="ImageElement"
+                                x:Name="PreviewImage"
                                 Margin="5"
-                                MouseDown="Image_MouseDown"
-                                MouseMove="Image_MouseMove"
-                                Source="{Binding PreviewImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                RenderOptions.BitmapScalingMode="HighQuality"
+                                Source="{Binding PreviewImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Stretch="Uniform" />
+                            <Border
+                                Background="#80000000"
+                                Visibility="{Binding SkewInstructionsVisibility}">
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="24"
+                                    Foreground="White"
+                                    Text="{Binding SkewInstructions}" />
+                            </Border>
                         </Grid>
                         <Button
                             Grid.Column="2"
@@ -100,11 +117,11 @@
                         </Grid.ColumnDefinitions>
                         <ToggleButton
                             Grid.Column="0"
-                            IsEnabled="True"
                             Height="50"
-                            IsChecked="{Binding CropSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                             Margin="{StaticResource GridMargin}"
                             Click="CropButton_Click"
+                            IsChecked="{Binding CropSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                            IsEnabled="True"
                             ToolTip="Crop">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -114,8 +131,8 @@
                         <Button
                             Grid.Column="1"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="True"
                             Command="{Binding AutoCropCommand}"
+                            IsEnabled="True"
                             ToolTip="Auto-Crop">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -157,7 +174,8 @@
                         <Button
                             Grid.Column="4"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="False"
+                            Command="{Binding SkewCommand}"
+                            IsEnabled="True"
                             ToolTip="Skew">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -177,8 +195,8 @@
                         <Button
                             Grid.Column="5"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="True"
                             Command="{Binding UndoCommand}"
+                            IsEnabled="True"
                             ToolTip="Undo">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -195,15 +213,15 @@
                                 Grid.Column="1"
                                 Width="Auto"
                                 Margin="{StaticResource GridMargin}"
-                                Content="{Binding ApplyButtonText}"
                                 Command="{Binding ApplyCommand}"
+                                Content="{Binding ApplyButtonText}"
                                 Visibility="{Binding ApplyCancelVisibility}" />
                             <Button
                                 Grid.Column="2"
                                 Width="Auto"
                                 Margin="{StaticResource GridMargin}"
-                                Content="{Binding CancelButtonText}"
                                 Command="{Binding CancelCommand}"
+                                Content="{Binding CancelButtonText}"
                                 Visibility="{Binding ApplyCancelVisibility}" />
                         </Grid>
                     </Grid>

@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Diagnostics;
 
 namespace SimplePhotoEditor.Managers
 {
@@ -23,18 +24,17 @@ namespace SimplePhotoEditor.Managers
             {
                 RemoveCropFromCur();
             }
+            
+            // Start with a smaller initial crop box in the center
             Rect interiorRectangle = new Rect(
+                frameworkElement.ActualWidth * 0.4,
+                frameworkElement.ActualHeight * 0.4,
                 frameworkElement.ActualWidth * 0.2,
-                frameworkElement.ActualHeight * 0.2,
-                frameworkElement.ActualWidth * 0.6,
-                frameworkElement.ActualHeight * 0.6);
-
-            var idk = frameworkElement.RenderSize;
+                frameworkElement.ActualHeight * 0.2);
 
             AdornerLayer adornerLayer = AdornerLayer.GetAdornerLayer(frameworkElement);
             cropAdorner = new CroppingAdorner.CroppingAdorner(frameworkElement, interiorRectangle);
             adornerLayer.Add(cropAdorner);
-            //imgCrop.Source = _clp.BpsCrop();
             cropAdorner.CropChanged += CropChanged;
             currentFrameworkElement = frameworkElement;
         }
@@ -95,11 +95,24 @@ namespace SimplePhotoEditor.Managers
         {
             if (cropAdorner != null)
             {
-                return new Rectangle(
-                (int)(cropAdorner.ActualWidth * 0.2),
-                (int)(cropAdorner.ActualHeight * 0.2),
-                (int)cropAdorner.ActualWidth,
-                (int)cropAdorner.ActualHeight);
+                var rect = cropAdorner.GetCropRect();
+                var src = ((SingleImageViewModel)currentFrameworkElement.DataContext).PreviewImage;
+                
+                // Calculate scaling factors between UI and actual image dimensions
+                var widthRatio = src.Width / currentFrameworkElement.ActualWidth;
+                var heightRatio = src.Height / currentFrameworkElement.ActualHeight;
+                
+                // Scale the crop rectangle coordinates
+                var scaledX = (int)(rect.X * widthRatio);
+                var scaledY = (int)(rect.Y * heightRatio);
+                var scaledWidth = (int)(rect.Width * widthRatio);
+                var scaledHeight = (int)(rect.Height * heightRatio);
+                
+                Debug.WriteLine($"UI Crop: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
+                Debug.WriteLine($"Scaled Crop: X={scaledX}, Y={scaledY}, Width={scaledWidth}, Height={scaledHeight}");
+                Debug.WriteLine($"Ratios: Width={widthRatio}, Height={heightRatio}");
+                
+                return new Rectangle(scaledX, scaledY, scaledWidth, scaledHeight);
             }
 
             return new Rectangle(

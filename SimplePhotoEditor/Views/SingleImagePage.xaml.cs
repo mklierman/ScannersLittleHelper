@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Composition;
 using Prism.Regions;
 using System.Windows;
+using System.Windows.Input;
 
 namespace SimplePhotoEditor.Views
 {
@@ -38,7 +39,35 @@ namespace SimplePhotoEditor.Views
 
         private void CropButton_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            ViewModel.CropCommand.Execute(ImageElement);
+            var imageContainer = this.FindName("ImageContainer") as Grid;
+            if (imageContainer != null)
+            {
+                ViewModel.CropCommand.Execute(imageContainer);
+            }
+        }
+
+        private void ImageContainer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is SingleImageViewModel viewModel)
+            {
+                viewModel.HandleSkewMouseDown(sender, e);
+            }
+        }
+
+        private void ImageContainer_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is SingleImageViewModel viewModel)
+            {
+                viewModel.HandleSkewMouseUp(sender, e);
+            }
+        }
+
+        private void ImageContainer_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (DataContext is SingleImageViewModel viewModel)
+            {
+                viewModel.HandleSkewMouseMove(sender, e);
+            }
         }
     }
 }

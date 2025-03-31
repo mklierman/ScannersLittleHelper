@@ -35,6 +35,11 @@ namespace SimplePhotoEditor.CroppingAdorner
 
 		// DPI for screen
 		private static double s_dpiX, s_dpiY;
+
+		private bool isDragging = false;
+		private bool isMoving = false;
+		private System.Windows.Point startPoint;
+		private bool isInitialized = false;
 		#endregion
 
 		#region Properties
@@ -107,13 +112,14 @@ namespace SimplePhotoEditor.CroppingAdorner
 		{
 			_vc = new VisualCollection(this);
 			_prCropMask = new PuncturedRect();
-			_prCropMask.IsHitTestVisible = false;
+			_prCropMask.IsHitTestVisible = true;
 			_prCropMask.RectInterior = rcInit;
 			_prCropMask.Fill = Fill;
 			_vc.Add(_prCropMask);
 			_cnvThumbs = new Canvas();
 			_cnvThumbs.HorizontalAlignment = HorizontalAlignment.Stretch;
 			_cnvThumbs.VerticalAlignment = VerticalAlignment.Stretch;
+			_cnvThumbs.IsHitTestVisible = true;
 
 			_vc.Add(_cnvThumbs);
 			BuildCorner(ref _crtTop, Cursors.SizeNS);
@@ -135,10 +141,16 @@ namespace SimplePhotoEditor.CroppingAdorner
 			_crtRight.DragDelta += new DragDeltaEventHandler(HandleRight);
 			_crtLeft.DragDelta += new DragDeltaEventHandler(HandleLeft);
 
-			// We have to keep the clipping interior withing the bounds of the adorned element
-			// so we have to track it's size to guarantee that...
-			FrameworkElement fel = adornedElement as FrameworkElement;
+			// Add mouse event handlers for click-and-drag
+			this.MouseLeftButtonDown += CroppingAdorner_MouseLeftButtonDown;
+			this.MouseLeftButtonUp += CroppingAdorner_MouseLeftButtonUp;
+			this.MouseMove += CroppingAdorner_MouseMove;
 
+			// Make sure the adorner can receive mouse events
+			this.IsHitTestVisible = true;
+			this.Focusable = true;
+
+			FrameworkElement fel = adornedElement as FrameworkElement;
 			if (fel != null)
 			{
 				fel.SizeChanged += new SizeChangedEventHandler(AdornedElement_SizeChanged);
@@ -318,6 +330,105 @@ namespace SimplePhotoEditor.CroppingAdorner
 				_prCropMask.RectInterior = new Rect(intLeft, intTop, intWidth, intHeight);
 			}
 		}
+
+		private void CroppingAdorner_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			// Check if we're clicking on a thumb
+			if (e.Source is CropThumb)
+			{
+				return;
+			}
+
+			// Check if we're clicking inside the crop area
+			var rect = _prCropMask.RectInterior;
+			var clickPoint = e.GetPosition(this);
+			
+			if (rect.Contains(clickPoint))
+			{
+				// Moving existing crop area
+				isMoving = true;
+				isDragging = false;
+				startPoint = clickPoint;
+				this.CaptureMouse();
+			}
+			else
+			{
+				// Creating new crop area
+				isMoving = false;
+				isDragging = true;
+				startPoint = clickPoint;
+				_prCropMask.RectInterior = new Rect(startPoint.X, startPoint.Y, 0, 0);
+				SetThumbs(_prCropMask.RectInterior);
+				this.CaptureMouse();
+			}
+			e.Handled = true;
+		}
+
+		private void CroppingAdorner_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (isDragging || isMoving)
+			{
+				this.ReleaseMouseCapture();
+				isDragging = false;
+				isMoving = false;
+				
+				if (isDragging)
+				{
+					// Ensure minimum size for new crop area
+					var rect = _prCropMask.RectInterior;
+					if (rect.Width < 10 || rect.Height < 10)
+					{
+						_prCropMask.RectInterior = new Rect(
+							rect.X,
+							rect.Y,
+							Math.Max(10, rect.Width),
+							Math.Max(10, rect.Height));
+						SetThumbs(_prCropMask.RectInterior);
+					}
+				}
+				e.Handled = true;
+			}
+		}
+
+		private void CroppingAdorner_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (e.LeftButton == MouseButtonState.Pressed)
+			{
+				if (isDragging)
+				{
+					// Creating new crop area
+					System.Windows.Point currentPoint = e.GetPosition(this);
+					double x = Math.Min(startPoint.X, currentPoint.X);
+					double y = Math.Min(startPoint.Y, currentPoint.Y);
+					double width = Math.Abs(currentPoint.X - startPoint.X);
+					double height = Math.Abs(currentPoint.Y - startPoint.Y);
+
+					_prCropMask.RectInterior = new Rect(x, y, width, height);
+					SetThumbs(_prCropMask.RectInterior);
+				}
+				else if (isMoving)
+				{
+					// Moving existing crop area
+					System.Windows.Point currentPoint = e.GetPosition(this);
+					double deltaX = currentPoint.X - startPoint.X;
+					double deltaY = currentPoint.Y - startPoint.Y;
+
+					var rect = _prCropMask.RectInterior;
+					double newX = rect.X + deltaX;
+					double newY = rect.Y + deltaY;
+
+					// Keep the crop area within bounds
+					newX = Math.Max(0, Math.Min(newX, AdornedElement.RenderSize.Width - rect.Width));
+					newY = Math.Max(0, Math.Min(newY, AdornedElement.RenderSize.Height - rect.Height));
+
+					_prCropMask.RectInterior = new Rect(newX, newY, rect.Width, rect.Height);
+					SetThumbs(_prCropMask.RectInterior);
+					startPoint = currentPoint;
+				}
+				RaiseEvent(new RoutedEventArgs(CropChangedEvent, this));
+				e.Handled = true;
+			}
+		}
 		#endregion
 
 		#region Arranging/positioning
@@ -350,47 +461,49 @@ namespace SimplePhotoEditor.CroppingAdorner
 		#region Public interface
 		public BitmapSource BpsCrop()
 		{
-			Thickness margin = AdornerMargin();
+			// Get the crop rectangle in device-independent pixels
 			Rect rcInterior = _prCropMask.RectInterior;
-
-			Point pxFromSize = UnitsToPx(rcInterior.Width, rcInterior.Height);
-
-			// It appears that CroppedBitmap indexes from the upper left of the margin whereas RenderTargetBitmap renders the
-			// control exclusive of the margin.  Hence our need to take the margins into account here...
-
+			
+			// Get the margins
+			Thickness margin = AdornerMargin();
+			
+			// Convert the crop rectangle to pixels, accounting for DPI and margins
 			Point pxFromPos = UnitsToPx(rcInterior.Left + margin.Left, rcInterior.Top + margin.Top);
-			Point pxWhole = UnitsToPx(AdornedElement.RenderSize.Width + margin.Left, AdornedElement.RenderSize.Height + margin.Left);
-			pxFromSize.X = Math.Max(Math.Min(pxWhole.X - pxFromPos.X, pxFromSize.X), 0);
-			pxFromSize.Y = Math.Max(Math.Min(pxWhole.Y - pxFromPos.Y, pxFromSize.Y), 0);
-			if (pxFromSize.X == 0 || pxFromSize.Y == 0)
-			{
-				return null;
-			}
-			System.Windows.Int32Rect rcFrom = new System.Windows.Int32Rect(pxFromPos.X, pxFromPos.Y, pxFromSize.X, pxFromSize.Y);
-			Rect r = new Rect(pxFromPos.X, pxFromPos.Y, pxFromSize.X, pxFromSize.Y);
-			RenderTargetBitmap rtb = new RenderTargetBitmap(pxWhole.X, pxWhole.Y, s_dpiX, s_dpiY, PixelFormats.Default);
+			Point pxFromSize = UnitsToPx(rcInterior.Width, rcInterior.Height);
+			
+			// Create a RenderTargetBitmap of the entire adorned element
+			RenderTargetBitmap rtb = new RenderTargetBitmap(
+				(int)AdornedElement.RenderSize.Width,
+				(int)AdornedElement.RenderSize.Height,
+				s_dpiX,
+				s_dpiY,
+				PixelFormats.Default);
+			
 			rtb.Render(AdornedElement);
-			return new CroppedBitmap(rtb, rcFrom);
+
+			// Calculate the crop rectangle in pixels
+			Int32Rect cropRect = new Int32Rect(
+				pxFromPos.X,
+				pxFromPos.Y,
+				pxFromSize.X,
+				pxFromSize.Y);
+
+			// Create and return the cropped bitmap
+			return new CroppedBitmap(rtb, cropRect);
 		}
 
 		public Rect GetCropRect()
-        {
-			Thickness margin = AdornerMargin();
+		{
+			// Get the crop rectangle in device-independent pixels
 			Rect rcInterior = _prCropMask.RectInterior;
-
-			Point pxFromSize = UnitsToPx(rcInterior.Width, rcInterior.Height);
-
-			// It appears that CroppedBitmap indexes from the upper left of the margin whereas RenderTargetBitmap renders the
-			// control exclusive of the margin.  Hence our need to take the margins into account here...
-
+			
+			// Get the margins
+			Thickness margin = AdornerMargin();
+			
+			// Convert the crop rectangle to pixels, accounting for DPI and margins
 			Point pxFromPos = UnitsToPx(rcInterior.Left + margin.Left, rcInterior.Top + margin.Top);
-			Point pxWhole = UnitsToPx(AdornedElement.RenderSize.Width + margin.Left, AdornedElement.RenderSize.Height + margin.Left);
-			pxFromSize.X = Math.Max(Math.Min(pxWhole.X - pxFromPos.X, pxFromSize.X), 0);
-			pxFromSize.Y = Math.Max(Math.Min(pxWhole.Y - pxFromPos.Y, pxFromSize.Y), 0);
-			if (pxFromSize.X == 0 || pxFromSize.Y == 0)
-			{
-				return default;
-			}
+			Point pxFromSize = UnitsToPx(rcInterior.Width, rcInterior.Height);
+			
 			return new Rect(pxFromPos.X, pxFromPos.Y, pxFromSize.X, pxFromSize.Y);
 		}
 		#endregion
@@ -429,6 +542,15 @@ namespace SimplePhotoEditor.CroppingAdorner
 		// the adorner's visual collection.
 		protected override int VisualChildrenCount { get { return _vc.Count; } }
 		protected override Visual GetVisualChild(int index) { return _vc[index]; }
+
+		protected override void OnRender(DrawingContext drawingContext)
+		{
+			// Ensure the adorner is rendered with a transparent background
+			drawingContext.DrawRectangle(
+				Brushes.Transparent,
+				null,
+				new Rect(0, 0, this.ActualWidth, this.ActualHeight));
+		}
 		#endregion
 
 		#region Internal Classes
