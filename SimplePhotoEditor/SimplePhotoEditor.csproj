@@ -9,14 +9,14 @@
     <AssemblyName>Scanners Little Helper</AssemblyName>
     <StartupObject>SimplePhotoEditor.App</StartupObject>
 	<RuntimeIdentifiers>win10-x64</RuntimeIdentifiers>
-	<ApplicationIcon></ApplicationIcon>
+	<ApplicationIcon>Resources\ScannersLittleHelper.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DNTScanner.Core" Version="1.1.2" />
-    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0" />
     <PackageReference Include="ImageProcessor" Version="2.9.1" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="13.7.0" />
-    <PackageReference Include="MahApps.Metro" Version="2.4.10" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.13.0" />
+    <PackageReference Include="MahApps.Metro" Version="2.4.11" />
     <PackageReference Include="MetadataExtractor" Version="2.8.1" />
     <PackageReference Include="Microsoft-WindowsAPICodePack-Core" Version="1.1.5" />
     <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
@@ -52,6 +52,10 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\ScannersLittleHelper.ico" />
   </ItemGroup>
 
   <ItemGroup>

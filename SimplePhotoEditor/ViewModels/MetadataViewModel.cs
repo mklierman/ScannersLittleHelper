@@ -1,6 +1,4 @@
-﻿using MahApps.Metro.Controls;
-using MahApps.Metro.Controls.Dialogs;
-using Microsoft.WindowsAPICodePack.Shell;
+﻿using Microsoft.WindowsAPICodePack.Shell;
 using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -15,7 +13,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Diagnostics;
 using MetadataExtractor;
@@ -520,7 +517,7 @@ namespace SimplePhotoEditor.ViewModels
         /// Handles the save operation for the current image's metadata.
         /// </summary>
         /// <param name="GoToNextImage">Indicates whether to move to the next image after saving.</param>
-        private async void OnSave(string GoToNextImage = "")
+        private void OnSave(string GoToNextImage = "")
         {
             if (IsSaving) return;
             
@@ -572,6 +569,7 @@ namespace SimplePhotoEditor.ViewModels
                 var newFilePath = Path.Combine(SelectedSaveToFolder, FileName + Path.GetExtension(FilePath));
                 if (File.Exists(newFilePath) && newFilePath != FilePath)
                 {
+                    var shouldOverwrite = false;
                     var dialogParams = new DialogParameters
                     {
                         { "Message", $"A file named '{FileName}' already exists in the destination folder. Do you want to replace it?" },
@@ -582,11 +580,13 @@ namespace SimplePhotoEditor.ViewModels
 
                     DialogService.ShowDialog("ConfirmationDialog", dialogParams, r =>
                     {
-                        if (r.Result == ButtonResult.No)
-                        {
-                            return;
-                        }
+                        shouldOverwrite = r.Result == ButtonResult.OK;
                     });
+
+                    if (!shouldOverwrite)
+                    {
+                        return;
+                    }
                 }
 
                 // Get the current image bytes from SingleImageViewModel
@@ -999,44 +999,6 @@ namespace SimplePhotoEditor.ViewModels
             SelectedSaveToFolder = directoryInfo.FullName;
         }
 
-        /// <summary>
-        /// Gets a new folder path from user input.
-        /// </summary>
-        /// <returns>The new folder path or null if cancelled.</returns>
-        private async Task<string> GetNewSaveToFolderAsync()
-        {
-            var result = await Task.Run(async () =>
-            {
-                var thumbnailView = (MetroWindow)regionManager.Regions[Regions.Main].GetView(PageKeys.Thumbnail);
-                return await thumbnailView.ShowInputAsync("Create New Directory", "Enter the new directory name:");
-            });
-            return result;
-        }
-
-        private async Task<bool> ShowConfirmationDialog(string message)
-        {
-            var parameters = new DialogParameters
-            {
-                { "message", message }
-            };
-
-            IDialogResult result = null;
-            await Task.Run(() => DialogService.ShowDialog("ConfirmationDialog", parameters, r => result = r));
-            return result?.Result == ButtonResult.OK;
-        }
-
-        private async Task ShowErrorDialog(string message)
-        {
-            Debug.WriteLine($"Showing error dialog with message: {message}");
-            var parameters = new DialogParameters
-            {
-                { "message", message }
-            };
-
-            IDialogResult result = null;
-            await Task.Run(() => DialogService.ShowDialog("ErrorDialog", parameters, r => result = r));
-            Debug.WriteLine($"Error dialog closed with result: {result?.Result}");
-        }
         #endregion
     }
 }

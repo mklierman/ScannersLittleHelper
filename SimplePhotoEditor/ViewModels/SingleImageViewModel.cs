@@ -72,22 +72,55 @@ namespace SimplePhotoEditor.ViewModels
 
         public ICommand AutoCropCommand => autoCropCommand ?? (autoCropCommand = new DelegateCommand(AutoCrop));
 
+        private void PushUndoState()
+        {
+            if (currentImageBytes == null)
+            {
+                return;
+            }
+
+            var previousBytes = (byte[])currentImageBytes.Clone();
+            imageUndoStack.Push(new EditUndoModel(PreviewImage, previousBytes, null, null));
+        }
+
+        private MagickFormat GetOutputFormat()
+        {
+            var extension = System.IO.Path.GetExtension(FilePath)?.ToLowerInvariant();
+            return extension switch
+            {
+                ".png" => MagickFormat.Png,
+                ".bmp" => MagickFormat.Bmp,
+                ".gif" => MagickFormat.Gif,
+                ".tif" => MagickFormat.Tiff,
+                ".tiff" => MagickFormat.Tiff,
+                _ => MagickFormat.Jpeg
+            };
+        }
+
+        private void ShowError(string message, Exception ex = null)
+        {
+            var fullMessage = ex == null ? message : $"{message}: {ex.Message}";
+            Debug.WriteLine(fullMessage);
+            var dialogParams = new DialogParameters
+            {
+                { "message", fullMessage }
+            };
+            DialogService.ShowDialog("ErrorDialog", dialogParams, null);
+        }
+
         private void AutoCrop()
         {
             try
             {
+                PushUndoState();
                 using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
                 {
                     // Trim the image (removes edges that are the same color as the corner pixels)
                     image.Trim();
-                    image.RePage();
+                    image.ResetPage();
                     
                     // Store the result
-                    currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
-                    
-                    // Add to undo stack
-                    var editModel = new EditUndoModel(PreviewImage, null, null);
-                    imageUndoStack.Push(editModel);
+                    currentImageBytes = image.ToByteArray(GetOutputFormat());
                 }
                 
                 RefreshPreviewImageFromBytes(currentImageBytes);
@@ -96,7 +129,7 @@ namespace SimplePhotoEditor.ViewModels
             {
                 Debug.WriteLine($"Error in auto-crop: {ex.Message}");
                 Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-                throw;
+                ShowError("Auto-crop failed", ex);
             }
         }
 
@@ -107,20 +140,19 @@ namespace SimplePhotoEditor.ViewModels
 		{
 			try
 			{
+                PushUndoState();
 				using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(tempFilePath ?? FilePath)))
 				{
 					image.Rotate(-90);
-					currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+					currentImageBytes = image.ToByteArray(GetOutputFormat());
 				}
 				
-				var editModel = new EditUndoModel(PreviewImage, null, null);
-				imageUndoStack.Push(editModel);
 				RefreshPreviewImageFromBytes(currentImageBytes);
 			}
 			catch (Exception ex)
 			{
 				Debug.WriteLine($"Error rotating left: {ex.Message}");
-				throw;
+                ShowError("Rotate left failed", ex);
 			}
 		}
 
@@ -130,20 +162,19 @@ namespace SimplePhotoEditor.ViewModels
 		{
 			try
 			{
+                PushUndoState();
 				using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(tempFilePath ?? FilePath)))
 				{
 					image.Rotate(90);
-					currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+					currentImageBytes = image.ToByteArray(GetOutputFormat());
 				}
 				
-				var editModel = new EditUndoModel(PreviewImage, null, null);
-				imageUndoStack.Push(editModel);
 				RefreshPreviewImageFromBytes(currentImageBytes);
 			}
 			catch (Exception ex)
 			{
 				Debug.WriteLine($"Error rotating right: {ex.Message}");
-				throw;
+                ShowError("Rotate right failed", ex);
 			}
 		}
 
@@ -239,8 +270,8 @@ namespace SimplePhotoEditor.ViewModels
 
         private void GetThumbnailViewModel()
         {
-            var thumbnailView = (ThumbnailPage)RegionManager.Regions[Regions.Main].GetView(PageKeys.Thumbnail);
-            ThumbnailViewModel = (ThumbnailViewModel)thumbnailView.DataContext;
+            var thumbnailView = RegionManager?.Regions[Regions.Main]?.GetView(PageKeys.Thumbnail) as ThumbnailPage;
+            ThumbnailViewModel = thumbnailView?.DataContext as ThumbnailViewModel;
         }
 
         private bool previousImageEnabled = true;
@@ -251,6 +282,11 @@ namespace SimplePhotoEditor.ViewModels
         public void SelectNextImage()
         {
             GetThumbnailViewModel();
+            if (ThumbnailViewModel?.Images == null || ThumbnailViewModel.SelectedImage == null)
+            {
+                return;
+            }
+
             if (ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) != ThumbnailViewModel.Images.Count - 1)
             {
                 var nextImageIndex = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) + 1;
@@ -264,6 +300,11 @@ namespace SimplePhotoEditor.ViewModels
         public void SelectPreviousImage()
         {
             GetThumbnailViewModel();
+            if (ThumbnailViewModel?.Images == null || ThumbnailViewModel.SelectedImage == null)
+            {
+                return;
+            }
+
             if (ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) != 0)
             {
                 var previousImageIndex = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage) - 1;
@@ -284,7 +325,7 @@ namespace SimplePhotoEditor.ViewModels
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting image preview: {ex.Message}");
-                throw;
+                ShowError("Unable to load image preview", ex);
             }
         }
 
@@ -313,7 +354,7 @@ namespace SimplePhotoEditor.ViewModels
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error refreshing preview image: {ex.Message}");
-                throw;
+                ShowError("Unable to refresh image preview", ex);
             }
         }
 
@@ -355,6 +396,7 @@ namespace SimplePhotoEditor.ViewModels
         {
             try
             {
+                PushUndoState();
                 // Remove the crop UI first
                 cropper.RemoveCropFromCur();
                 ApplyCancelVisibility = Visibility.Hidden;
@@ -387,13 +429,10 @@ namespace SimplePhotoEditor.ViewModels
 
                     Debug.WriteLine($"Scaled crop rectangle: X={scaledX}, Y={scaledY}, Width={scaledWidth}, Height={scaledHeight}");
 
-                    IMagickGeometry magickGeometry = new MagickGeometry(scaledX, scaledY, scaledWidth, scaledHeight);
+                    IMagickGeometry magickGeometry = new MagickGeometry(scaledX, scaledY, (uint)scaledWidth, (uint)scaledHeight);
                     image.Crop(magickGeometry);
-                    image.RePage();
-                    currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
-                    
-                    var editModel = new EditUndoModel(PreviewImage, null, null);
-                    imageUndoStack.Push(editModel);
+                    image.ResetPage();
+                    currentImageBytes = image.ToByteArray(GetOutputFormat());
                 }
                 CropSelected = false;
                 RefreshPreviewImageFromBytes(currentImageBytes);
@@ -402,7 +441,7 @@ namespace SimplePhotoEditor.ViewModels
             {
                 Debug.WriteLine($"Error applying crop: {ex.Message}");
                 Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-                throw;
+                ShowError("Apply crop failed", ex);
             }
         }
 
@@ -418,11 +457,10 @@ namespace SimplePhotoEditor.ViewModels
             if (imageUndoStack.Count > 0)
             {
                 var previousState = imageUndoStack.Pop();
-                if (previousState.ImageSource is BitmapImage previousImage)
+                if (previousState?.ImageBytes != null)
                 {
-                    // Restore the original image bytes
-                    currentImageBytes = File.ReadAllBytes(FilePath);
-                    PreviewImage = previousImage;
+                    currentImageBytes = previousState.ImageBytes;
+                    RefreshPreviewImageFromBytes(currentImageBytes);
                 }
             }
         }
@@ -546,14 +584,12 @@ namespace SimplePhotoEditor.ViewModels
         {
             try
             {
+                PushUndoState();
                 using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
                 {
                     // Rotate the image to correct the skew
                     image.Rotate(angle);
-                    currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
-                    
-                    var editModel = new EditUndoModel(PreviewImage, null, null);
-                    imageUndoStack.Push(editModel);
+                    currentImageBytes = image.ToByteArray(GetOutputFormat());
                     RefreshPreviewImageFromBytes(currentImageBytes);
                 }
             }

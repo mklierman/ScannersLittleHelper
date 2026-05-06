@@ -11,6 +11,7 @@
     xmlns:templateSelectors="clr-namespace:SimplePhotoEditor.TemplateSelectors"
     xmlns:viewmodels="clr-namespace:SimplePhotoEditor.ViewModels"
     Title="{x:Static properties:Resources.AppDisplayName}"
+    Icon="/Resources/ScannersLittleHelper.ico"
     MinWidth="500"
     MinHeight="350"
     d:DataContext="{d:DesignInstance Type=viewmodels:ShellViewModel}"

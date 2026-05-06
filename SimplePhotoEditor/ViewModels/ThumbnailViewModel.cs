@@ -128,10 +128,10 @@ namespace SimplePhotoEditor.ViewModels
                     Images.Sort(o => o.CreatedDate, true);
                     break;
                 case ("ModifiedDate", "Desc"):
-                    Images.Sort(o => o.CreatedDate, true);
+                    Images.Sort(o => o.ModifiedDate, true);
                     break;
                 case ("FileName", "Desc"):
-                    Images.Sort(o => o.CreatedDate, true);
+                    Images.Sort(o => o.FileName, true);
                     break;
             }
 
@@ -139,6 +139,10 @@ namespace SimplePhotoEditor.ViewModels
 
         internal void OpenSingleImage()
         {
+            if (SelectedImage == null || string.IsNullOrEmpty(SelectedImage.FilePath))
+            {
+                return;
+            }
 
             var navParams = new NavigationParameters();
             navParams.Add("FilePath", SelectedImage.FilePath);
@@ -199,6 +203,11 @@ namespace SimplePhotoEditor.ViewModels
 
         public void SelectNextImage(int nextImageIndex)
         {
+            if (Images == null || nextImageIndex < 0 || nextImageIndex >= Images.Count)
+            {
+                return;
+            }
+
             if (nextImageIndex < Images.Count)
             {
                 SelectedImage = Images[nextImageIndex];
@@ -215,22 +224,30 @@ namespace SimplePhotoEditor.ViewModels
 
             foreach (FileInfo img in files?.OrderBy(x => x.Name).ToArray())
             {
-                ShellFile shellFile = ShellFile.FromFilePath(img.FullName);
-
-                var thumb = new Thumbnail();
-                thumb.Image = Bitmap2BitmapImage(shellFile.Thumbnail.Bitmap);
-                thumb.FileName = img.Name;
-                thumb.CreatedDate = img.CreationTime;
-                thumb.ModifiedDate = img.LastWriteTime;
-                thumb.FilePath = img.FullName;
-                thumb.MetaDataModified =
-                    !string.IsNullOrEmpty(shellFile.Properties.System.Title.Value) ||
-                    !string.IsNullOrEmpty(shellFile.Properties.System.Subject.Value) ||
-                    !string.IsNullOrEmpty(shellFile.Properties.System.Comment.Value) ||
-                    shellFile.Properties.System.Photo.DateTaken.Value != null ||
-                    shellFile.Properties.System.Photo.TagViewAggregate.Value?.Length > 0;
-                thumb.Image.Freeze();
-                Images.Add(thumb);
+                try
+                {
+                    using (ShellFile shellFile = ShellFile.FromFilePath(img.FullName))
+                    {
+                        var thumb = new Thumbnail();
+                        thumb.Image = Bitmap2BitmapImage(shellFile.Thumbnail.Bitmap);
+                        thumb.FileName = img.Name;
+                        thumb.CreatedDate = img.CreationTime;
+                        thumb.ModifiedDate = img.LastWriteTime;
+                        thumb.FilePath = img.FullName;
+                        thumb.MetaDataModified =
+                            !string.IsNullOrEmpty(shellFile.Properties.System.Title.Value) ||
+                            !string.IsNullOrEmpty(shellFile.Properties.System.Subject.Value) ||
+                            !string.IsNullOrEmpty(shellFile.Properties.System.Comment.Value) ||
+                            shellFile.Properties.System.Photo.DateTaken.Value != null ||
+                            shellFile.Properties.System.Photo.TagViewAggregate.Value?.Length > 0;
+                        thumb.Image.Freeze();
+                        Images.Add(thumb);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to load thumbnail for '{img.FullName}': {ex.Message}");
+                }
             }
         }
 
