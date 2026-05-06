@@ -23,12 +23,12 @@ namespace SimplePhotoEditor.Views
 
         private void Image_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            //ViewModel.DrawCropRectangle(sender, e);
+            ViewModel?.HandleSkewMouseDown(ImageElement, ImageContainer, e);
         }
 
         private void Image_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            //ViewModel.MoveCropRectangle(sender, e);
+            ViewModel?.HandleSkewMouseMove(ImageElement, e);
         }
 
         public void OnNavigatedTo(NavigationContext navigationContext)
@@ -38,7 +38,22 @@ namespace SimplePhotoEditor.Views
 
         private void CropButton_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            //ViewModel.CropCommand.Execute(ImageElement);
+            ViewModel?.CropCommand?.Execute(ImageElement);
+        }
+
+        private void ImageContainer_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            ViewModel?.HandleSkewMouseDown(ImageContainer, ImageContainer, e);
+        }
+
+        private void ImageContainer_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            ViewModel?.HandleSkewMouseMove(ImageContainer, e);
+        }
+
+        private void ImageContainer_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            ViewModel?.HandleSkewMouseUp(ImageContainer, ImageContainer, e);
         }
     }
 }

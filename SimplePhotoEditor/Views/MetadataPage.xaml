@@ -227,7 +227,18 @@
                 Command="{Binding SaveNextCommand}"
                 CommandParameter="true"
                 Content="Save and Next"
-                TabIndex="112" />
+                TabIndex="112">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CallingPage}" Value="Scan">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
         </Grid>
     </Grid>
 </UserControl>

@@ -47,15 +47,42 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Grid
+                            x:Name="ImageContainer"
                             Grid.Column="0"
                             Margin="5"
-                            Background="{StaticResource MahApps.Brushes.Flyout.Background}">
+                            Background="{StaticResource MahApps.Brushes.Flyout.Background}"
+                            PreviewMouseLeftButtonDown="ImageContainer_PreviewMouseLeftButtonDown"
+                            PreviewMouseMove="ImageContainer_PreviewMouseMove"
+                            PreviewMouseLeftButtonUp="ImageContainer_PreviewMouseLeftButtonUp">
                             <Image
                                 x:Name="ImageElement"
                                 Margin="5"
-                                MouseDown="Image_MouseDown"
-                                MouseMove="Image_MouseMove"
                                 Source="{Binding PreviewImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Border
+                                Panel.ZIndex="9"
+                                Background="#80000000"
+                                Visibility="{Binding SkewInstructionsVisibility}">
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="24"
+                                    Foreground="White"
+                                    Text="{Binding SkewInstructions}" />
+                            </Border>
+                            <Grid
+                                Panel.ZIndex="10"
+                                Background="#80000000"
+                                Visibility="{Binding ScanningOverlayVisibility}">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <ProgressBar Width="200" Height="14" IsIndeterminate="True" />
+                                    <TextBlock
+                                        Margin="0,8,0,0"
+                                        HorizontalAlignment="Center"
+                                        Foreground="White"
+                                        FontWeight="SemiBold"
+                                        Text="Scanning..." />
+                                </StackPanel>
+                            </Grid>
                         </Grid>
                     </Grid>
                     <Grid Grid.Row="1" Height="Auto">
@@ -80,11 +107,10 @@
                                 <ColumnDefinition Width="50" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                        <ToggleButton
+                        <Button
                             Grid.Column="0"
                             IsEnabled="True"
                             Height="50"
-                            IsChecked="{Binding CropSelected}"
                             Margin="{StaticResource GridMargin}"
                             Click="CropButton_Click"
                             ToolTip="Crop">
@@ -92,11 +118,12 @@
                                 FontFamily="Segoe MDL2 Assets"
                                 FontSize="24"
                                 Text="&#xE123;" />
-                        </ToggleButton>
+                        </Button>
                         <Button
                             Grid.Column="1"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="False"
+                            IsEnabled="True"
+                            Command="{Binding AutoCropCommand}"
                             ToolTip="Auto-Crop">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -106,7 +133,8 @@
                         <Button
                             Grid.Column="2"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="False"
+                            IsEnabled="True"
+                            Command="{Binding RotateLeftCommand}"
                             ToolTip="Rotate Left">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -116,7 +144,8 @@
                         <Button
                             Grid.Column="3"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="False"
+                            IsEnabled="True"
+                            Command="{Binding RotateRightCommand}"
                             ToolTip="Rotate Right">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -136,7 +165,8 @@
                         <Button
                             Grid.Column="4"
                             Margin="{StaticResource GridMargin}"
-                            IsEnabled="False"
+                            IsEnabled="True"
+                            Command="{Binding SkewCommand}"
                             ToolTip="Skew">
                             <TextBlock
                                 FontFamily="Segoe MDL2 Assets"
@@ -169,15 +199,31 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button
                                 Grid.Column="1"
                                 Width="Auto"
                                 Margin="{StaticResource GridMargin}"
+                                Visibility="{Binding ApplyCancelVisibility}"
+                                Content="Apply"
+                                Command="{Binding ApplyCommand}"/>
+                            <Button
+                                Grid.Column="2"
+                                Width="Auto"
+                                Margin="{StaticResource GridMargin}"
+                                Visibility="{Binding ApplyCancelVisibility}"
+                                Content="Cancel"
+                                Command="{Binding CancelCommand}"/>
+                            <Button
+                                Grid.Column="3"
+                                Width="Auto"
+                                Margin="{StaticResource GridMargin}"
                                 Content="Scan Preview"
                                 Command="{Binding ScanPreview}"/>
                             <Button
-                                Grid.Column="2"
+                                Grid.Column="4"
                                 Width="Auto"
                                 Margin="{StaticResource GridMargin}"
                                 Content="Scan"

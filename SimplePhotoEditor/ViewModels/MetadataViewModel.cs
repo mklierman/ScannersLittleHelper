@@ -230,6 +230,15 @@ namespace SimplePhotoEditor.ViewModels
             set
             {
                 SetProperty(ref selectedSaveToFolder, value);
+                if (string.IsNullOrWhiteSpace(SelectedSaveToFolder))
+                {
+                    if (SaveToRootFolder == null)
+                    {
+                        MaxFileNameLength = 230;
+                    }
+                    return;
+                }
+
                 if (SaveToRootFolder == null)
                 {
                     SaveToRootFolder = SelectedSaveToFolder;
@@ -348,6 +357,25 @@ namespace SimplePhotoEditor.ViewModels
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Clears metadata fields for scan workflows where no file is selected yet.
+        /// </summary>
+        public void ClearMetadataForScan()
+        {
+            FilePath = null;
+            FileName = string.Empty;
+            Title = string.Empty;
+            Subject = string.Empty;
+            Comment = string.Empty;
+            DateTaken = null;
+            Tag = string.Empty;
+            SelectedTag = null;
+            Tags = new ObservableCollection<string>();
+            SaveToFolderOptions = new ObservableCollection<string>();
+            SelectedSaveToFolder = null;
+            FocusOnFileName = false;
+        }
+
         /// <summary>
         /// Adds a new tag to the image's tag collection.
         /// </summary>

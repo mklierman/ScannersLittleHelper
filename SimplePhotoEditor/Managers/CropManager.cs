@@ -41,8 +41,15 @@ namespace SimplePhotoEditor.Managers
 
         public void RemoveCropFromCur()
         {
+            if (currentFrameworkElement == null || cropAdorner == null)
+            {
+                return;
+            }
+
             AdornerLayer adornerLayer = AdornerLayer.GetAdornerLayer(currentFrameworkElement);
-            adornerLayer.Remove(cropAdorner);
+            adornerLayer?.Remove(cropAdorner);
+            cropAdorner = null;
+            currentFrameworkElement = null;
         }
 
         private void RefreshCropImage()
@@ -96,23 +103,7 @@ namespace SimplePhotoEditor.Managers
             if (cropAdorner != null)
             {
                 var rect = cropAdorner.GetCropRect();
-                var src = ((SingleImageViewModel)currentFrameworkElement.DataContext).PreviewImage;
-                
-                // Calculate scaling factors between UI and actual image dimensions
-                var widthRatio = src.Width / currentFrameworkElement.ActualWidth;
-                var heightRatio = src.Height / currentFrameworkElement.ActualHeight;
-                
-                // Scale the crop rectangle coordinates
-                var scaledX = (int)(rect.X * widthRatio);
-                var scaledY = (int)(rect.Y * heightRatio);
-                var scaledWidth = (int)(rect.Width * widthRatio);
-                var scaledHeight = (int)(rect.Height * heightRatio);
-                
-                Debug.WriteLine($"UI Crop: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
-                Debug.WriteLine($"Scaled Crop: X={scaledX}, Y={scaledY}, Width={scaledWidth}, Height={scaledHeight}");
-                Debug.WriteLine($"Ratios: Width={widthRatio}, Height={heightRatio}");
-                
-                return new Rectangle(scaledX, scaledY, scaledWidth, scaledHeight);
+                return new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
             }
 
             return new Rectangle(
