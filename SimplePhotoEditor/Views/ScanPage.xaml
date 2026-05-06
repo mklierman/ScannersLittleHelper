@@ -12,7 +12,10 @@
     d:DataContext="{d:DesignInstance Type=viewmodels:SingleImageViewModel}"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    Focusable="True"
     prism:ViewModelLocator.AutoWireViewModel="True"
+    PreviewKeyDown="ScanPage_PreviewKeyDown"
+    PreviewMouseRightButtonDown="ScanPage_PreviewMouseRightButtonDown"
     Style="{StaticResource BaseUserControlStyle}"
     mc:Ignorable="d">
     <UserControl.Resources>

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Composition;
 using Prism.Regions;
 using System.Windows;
+using System.Windows.Input;
 
 namespace SimplePhotoEditor.Views
 {
@@ -12,6 +13,7 @@ namespace SimplePhotoEditor.Views
         public ScanPage()
         {
             InitializeComponent();
+            Loaded += ScanPage_Loaded;
         }
 
         [Import]
@@ -54,6 +56,26 @@ namespace SimplePhotoEditor.Views
         private void ImageContainer_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ViewModel?.HandleSkewMouseUp(ImageContainer, ImageContainer, e);
+        }
+
+        private void ScanPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            Keyboard.Focus(this);
+        }
+
+        private void ScanPage_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                ViewModel?.CancelCropOrSkew();
+                e.Handled = true;
+            }
+        }
+
+        private void ScanPage_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            ViewModel?.CancelActiveEdits();
+            e.Handled = true;
         }
     }
 }

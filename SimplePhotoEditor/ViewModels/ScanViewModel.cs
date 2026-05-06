@@ -177,14 +177,20 @@ namespace SimplePhotoEditor.ViewModels
         public ICommand CancelCommand => cancelCommand ??= new DelegateCommand(CancelCrop);
         public ICommand SkewCommand => skewCommand ??= new DelegateCommand(StartSkew);
 
-        private void PerformScanPreview()
+        private async void PerformScanPreview()
         {
+            await PerformScan(isPreview: true);
         }
 
         private DelegateCommand scanFull;
         public ICommand ScanFull => scanFull ??= new DelegateCommand(PerformScanFull);
 
         private async void PerformScanFull()
+        {
+            await PerformScan(isPreview: false);
+        }
+
+        private async Task PerformScan(bool isPreview)
         {
             if (IsScanning)
             {
@@ -198,7 +204,7 @@ namespace SimplePhotoEditor.ViewModels
                 ScanWarningMessage = string.Empty;
                 ScanWarningVisibility = Visibility.Collapsed;
 
-                var scanResult = await RunScanOnStaThreadAsync();
+                var scanResult = await RunScanOnStaThreadAsync(isPreview);
 
                 if (!string.IsNullOrWhiteSpace(scanResult) && File.Exists(scanResult))
                 {
@@ -206,7 +212,7 @@ namespace SimplePhotoEditor.ViewModels
                     imageUndoStack.Clear();
                     RefreshPreviewImageFromBytes(currentImageBytes);
                     FileName = Path.GetFileName(scanResult);
-                    if (MetaDataViewModel != null)
+                    if (!isPreview && MetaDataViewModel != null)
                     {
                         MetaDataViewModel.CallingPage = PageKeys.Scan;
                         MetaDataViewModel.FilePath = scanResult;
@@ -233,7 +239,7 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        private Task<string> RunScanOnStaThreadAsync()
+        private Task<string> RunScanOnStaThreadAsync(bool isPreview)
         {
             var tcs = new TaskCompletionSource<string>();
 
@@ -279,11 +285,28 @@ namespace SimplePhotoEditor.ViewModels
                         throw new InvalidOperationException("The selected DPI is not supported by the current scanner. Choose another DPI in Settings.");
                     }
 
+                    var requestedDpi = selectedDpi;
+                    if (isPreview)
+                    {
+                        var supported = selectedScanner.SupportedResolutions?.Distinct().OrderBy(r => r).ToList() ?? new List<int>();
+                        var targetPreviewDpi = 75;
+                        var previewDpi = supported.FirstOrDefault(r => r >= targetPreviewDpi);
+                        if (previewDpi <= 0 && supported.Count > 0)
+                        {
+                            previewDpi = supported.First();
+                        }
+
+                        if (previewDpi > 0)
+                        {
+                            requestedDpi = previewDpi;
+                        }
+                    }
+
                     using var scannerDevice = new ScannerDevice(selectedScanner);
                     scannerDevice.ScannerPictureSettings(config =>
                     {
                         config.ColorFormat(DNTScanner.Core.ColorType.Color)
-                              .Resolution(selectedDpi)
+                              .Resolution(requestedDpi)
                               .Brightness(1)
                               .Contrast(1)
                               .StartPosition(left: 0, top: 0);
@@ -304,7 +327,8 @@ namespace SimplePhotoEditor.ViewModels
                     });
 
                     var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    var fileName = Path.Combine(Directory.GetCurrentDirectory(), $"Scan_{timestamp}.jpg");
+                    var prefix = isPreview ? "Preview" : "Scan";
+                    var fileName = Path.Combine(Directory.GetCurrentDirectory(), $"{prefix}_{timestamp}.jpg");
                     string firstSavedFilePath = null;
                     foreach (var file in scannerDevice.SaveScannedImageFiles(fileName))
                     {
@@ -316,7 +340,7 @@ namespace SimplePhotoEditor.ViewModels
 
                     foreach (var fileBytes in scannerDevice.ExtractScannedImageFiles())
                     {
-                        File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), $"Scan_{timestamp}_raw.jpg"), fileBytes);
+                        File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), $"{prefix}_{timestamp}_raw.jpg"), fileBytes);
                     }
 
                     tcs.SetResult(firstSavedFilePath);
@@ -569,6 +593,40 @@ namespace SimplePhotoEditor.ViewModels
             CropSelected = false;
         }
 
+        public void CancelCropOrSkew()
+        {
+            if (isInSkewMode)
+            {
+                CancelSkew();
+            }
+
+            if (CropSelected || ApplyCancelVisibility == Visibility.Visible)
+            {
+                CancelCrop();
+            }
+        }
+
+        public void CancelActiveEdits()
+        {
+            if (isInSkewMode)
+            {
+                CancelSkew();
+            }
+        }
+
+        private void CancelSkew()
+        {
+            isDrawingSkewLine = false;
+            if (skewLine != null && skewLine.Parent is Panel parentPanel)
+            {
+                parentPanel.Children.Remove(skewLine);
+            }
+
+            skewLine = null;
+            isInSkewMode = false;
+            SkewInstructionsVisibility = Visibility.Collapsed;
+        }
+
         private void StartSkew()
         {
             if (currentImageBytes == null || isInSkewMode)
@@ -644,9 +702,7 @@ namespace SimplePhotoEditor.ViewModels
                 imageContainer.Children.Remove(skewLine);
             }
 
-            skewLine = null;
-            isInSkewMode = false;
-            SkewInstructionsVisibility = Visibility.Collapsed;
+            CancelSkew();
         }
     }
 }
