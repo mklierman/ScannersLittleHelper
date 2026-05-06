@@ -28,6 +28,7 @@ namespace SimplePhotoEditor.ViewModels
 {
     public class SingleImageViewModel : BindableBase, INavigationAware
     {
+        private const string AutoCropStrengthKey = "AutoCropStrength";
         private ICommand autoCropCommand;
         private ICommand cropCommand;
         private ICommand rotateLeftCommand;
@@ -117,6 +118,7 @@ namespace SimplePhotoEditor.ViewModels
                 PushUndoState();
                 using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
                 {
+                    image.ColorFuzz = new Percentage(GetAutoCropFuzzPercent());
                     // Trim the image (removes edges that are the same color as the corner pixels)
                     image.Trim();
                     image.ResetPage();
@@ -133,6 +135,20 @@ namespace SimplePhotoEditor.ViewModels
                 Debug.WriteLine($"Stack trace: {ex.StackTrace}");
                 ShowError("Auto-crop failed", ex);
             }
+        }
+
+        private double GetAutoCropFuzzPercent()
+        {
+            var strength = App.Current.Properties.Contains(AutoCropStrengthKey)
+                ? App.Current.Properties[AutoCropStrengthKey]?.ToString()
+                : "Medium";
+
+            return strength switch
+            {
+                "Low" => 2.0,
+                "High" => 10.0,
+                _ => 5.0
+            };
         }
 
         public ICommand CropCommand => cropCommand ?? (cropCommand = new DelegateCommand<FrameworkElement>(StartCrop));

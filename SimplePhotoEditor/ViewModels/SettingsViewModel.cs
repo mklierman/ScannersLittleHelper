@@ -18,6 +18,7 @@ namespace SimplePhotoEditor.ViewModels
     {
         private const string LastSelectedScannerNameKey = "LastSelectedScannerName";
         private const string LastSelectedDpiKeyPrefix = "LastSelectedDpi::";
+        private const string AutoCropStrengthKey = "AutoCropStrength";
         private readonly AppConfig _appConfig;
         private readonly IThemeSelectorService _themeSelectorService;
         private readonly ISystemService _systemService;
@@ -31,6 +32,8 @@ namespace SimplePhotoEditor.ViewModels
         private string selectedScannerName;
         private ObservableCollection<int> dpiList = new ObservableCollection<int>();
         private int selectedDPI;
+        private ObservableCollection<string> autoCropStrengthOptions = new ObservableCollection<string> { "Low", "Medium", "High" };
+        private string selectedAutoCropStrength = "Medium";
 
 
         public Dictionary<string, ScannerSettings> ScannerList
@@ -145,6 +148,24 @@ namespace SimplePhotoEditor.ViewModels
                 {
                     Debug.WriteLine($"[SettingsVM] SelectedDPI changed -> {SelectedDPI}");
                     SaveSelectedDpi();
+                }
+            }
+        }
+
+        public ObservableCollection<string> AutoCropStrengthOptions
+        {
+            get => autoCropStrengthOptions;
+            set => SetProperty(ref autoCropStrengthOptions, value);
+        }
+
+        public string SelectedAutoCropStrength
+        {
+            get => selectedAutoCropStrength;
+            set
+            {
+                if (SetProperty(ref selectedAutoCropStrength, value))
+                {
+                    SaveAutoCropStrength();
                 }
             }
         }
@@ -311,6 +332,29 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
+        private void SaveAutoCropStrength()
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedAutoCropStrength))
+            {
+                App.Current.Properties[AutoCropStrengthKey] = SelectedAutoCropStrength;
+            }
+        }
+
+        private void RestoreAutoCropStrength()
+        {
+            if (App.Current.Properties.Contains(AutoCropStrengthKey))
+            {
+                var savedStrength = App.Current.Properties[AutoCropStrengthKey]?.ToString();
+                if (!string.IsNullOrWhiteSpace(savedStrength) && AutoCropStrengthOptions.Contains(savedStrength))
+                {
+                    SelectedAutoCropStrength = savedStrength;
+                    return;
+                }
+            }
+
+            SelectedAutoCropStrength = "Medium";
+        }
+
         public AppTheme Theme
         {
             get { return _theme; }
@@ -341,6 +385,7 @@ namespace SimplePhotoEditor.ViewModels
             VersionDescription = $"SimplePhotoEditor - {_applicationInfoService.GetVersion()}";
             Theme = _themeSelectorService.GetCurrentTheme();
             PopulateScanners();
+            RestoreAutoCropStrength();
         }
 
         public void OnNavigatedFrom(NavigationContext navigationContext)
@@ -348,6 +393,7 @@ namespace SimplePhotoEditor.ViewModels
             Debug.WriteLine("[SettingsVM] OnNavigatedFrom");
             SaveSelectedScannerName();
             SaveSelectedDpi();
+            SaveAutoCropStrength();
         }
 
         private void OnSetTheme(string themeName)

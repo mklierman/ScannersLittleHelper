@@ -32,6 +32,7 @@ namespace SimplePhotoEditor.ViewModels
     {
         private const string LastSelectedScannerNameKey = "LastSelectedScannerName";
         private const string LastSelectedDpiKeyPrefix = "LastSelectedDpi::";
+        private const string AutoCropStrengthKey = "AutoCropStrength";
         private IRegionManager RegionManager;
         private IDialogService DialogService;
         private ISessionService SessionService;
@@ -446,10 +447,25 @@ namespace SimplePhotoEditor.ViewModels
 
             PushUndoState();
             using var image = new MagickImage(currentImageBytes);
+            image.ColorFuzz = new Percentage(GetAutoCropFuzzPercent());
             image.Trim();
             image.ResetPage();
             currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
             RefreshPreviewImageFromBytes(currentImageBytes);
+        }
+
+        private double GetAutoCropFuzzPercent()
+        {
+            var strength = App.Current.Properties.Contains(AutoCropStrengthKey)
+                ? App.Current.Properties[AutoCropStrengthKey]?.ToString()
+                : "Medium";
+
+            return strength switch
+            {
+                "Low" => 2.0,
+                "High" => 10.0,
+                _ => 5.0
+            };
         }
 
         private void RotateLeft()

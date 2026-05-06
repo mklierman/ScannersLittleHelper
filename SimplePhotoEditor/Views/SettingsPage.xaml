@@ -125,6 +125,18 @@
                         Width="220"
                         ItemsSource="{Binding DPIList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         SelectedItem="{Binding SelectedDPI, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Margin="{StaticResource SmallRightMargin}"
+                        VerticalAlignment="Center"
+                        Text="Auto-Crop Strength" />
+                    <ComboBox
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Width="220"
+                        ItemsSource="{Binding AutoCropStrengthOptions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        SelectedItem="{Binding SelectedAutoCropStrength, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 </Grid>
 
                 <TextBlock
