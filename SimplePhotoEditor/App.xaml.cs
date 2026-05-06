@@ -56,6 +56,19 @@ namespace SimplePhotoEditor
             {
                 App.Current.MainWindow.Width = Convert.ToDouble(App.Current.Properties["AppWidth"].ToString());
             }
+            if (App.Current.Properties.Contains("AppLeft"))
+            {
+                App.Current.MainWindow.Left = Convert.ToDouble(App.Current.Properties["AppLeft"].ToString());
+            }
+            if (App.Current.Properties.Contains("AppTop"))
+            {
+                App.Current.MainWindow.Top = Convert.ToDouble(App.Current.Properties["AppTop"].ToString());
+            }
+            if (App.Current.Properties.Contains("AppIsMaximized"))
+            {
+                var isMaximized = Convert.ToBoolean(App.Current.Properties["AppIsMaximized"].ToString());
+                App.Current.MainWindow.WindowState = isMaximized ? WindowState.Maximized : WindowState.Normal;
+            }
 
 
             base.OnInitialized();

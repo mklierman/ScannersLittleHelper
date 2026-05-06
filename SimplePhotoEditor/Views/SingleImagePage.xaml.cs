@@ -69,5 +69,23 @@ namespace SimplePhotoEditor.Views
                 viewModel.HandleSkewMouseMove(sender, e);
             }
         }
+
+        private void SingleImagePage_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is SingleImageViewModel viewModel)
+            {
+                viewModel.CancelActiveEdits();
+                e.Handled = true;
+            }
+        }
+
+        private void SingleImagePage_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape && DataContext is SingleImageViewModel viewModel)
+            {
+                viewModel.CancelCropOrSkew();
+                e.Handled = true;
+            }
+        }
     }
 }

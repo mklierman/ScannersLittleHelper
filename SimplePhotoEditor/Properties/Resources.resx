@@ -154,10 +154,10 @@
     <value>Thumbnail</value>
   </data>
   <data name="ShellSingleImagePage" xml:space="preserve">
-    <value>SingleImage</value>
+    <value>Single Image</value>
   </data>
   <data name="SingleImagePageTitle" xml:space="preserve">
-    <value>SingleImage</value>
+    <value>Single Image</value>
   </data>
   <data name="ShellGoBackButton" xml:space="preserve">
     <value>Go back</value>

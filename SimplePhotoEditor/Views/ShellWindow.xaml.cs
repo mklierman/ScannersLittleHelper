@@ -22,8 +22,22 @@ namespace SimplePhotoEditor.Views
 
         private void MetroWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            App.Current.Properties["AppHeight"] = App.Current.MainWindow.Height;
-            App.Current.Properties["AppWidth"] = App.Current.MainWindow.Width;
+            if (WindowState == System.Windows.WindowState.Maximized)
+            {
+                App.Current.Properties["AppHeight"] = RestoreBounds.Height;
+                App.Current.Properties["AppWidth"] = RestoreBounds.Width;
+                App.Current.Properties["AppLeft"] = RestoreBounds.Left;
+                App.Current.Properties["AppTop"] = RestoreBounds.Top;
+            }
+            else
+            {
+                App.Current.Properties["AppHeight"] = App.Current.MainWindow.Height;
+                App.Current.Properties["AppWidth"] = App.Current.MainWindow.Width;
+                App.Current.Properties["AppLeft"] = App.Current.MainWindow.Left;
+                App.Current.Properties["AppTop"] = App.Current.MainWindow.Top;
+            }
+
+            App.Current.Properties["AppIsMaximized"] = WindowState == System.Windows.WindowState.Maximized;
         }
 
         private void MetroWindow_Initialized(object sender, EventArgs e)
@@ -32,8 +46,15 @@ namespace SimplePhotoEditor.Views
 
         private void MetroWindow_SizeChanged(object sender, System.Windows.SizeChangedEventArgs e)
         {
-            App.Current.Properties["AppHeight"] = App.Current.MainWindow.Height;
-            App.Current.Properties["AppWidth"] = App.Current.MainWindow.Width;
+            if (WindowState == System.Windows.WindowState.Normal)
+            {
+                App.Current.Properties["AppHeight"] = App.Current.MainWindow.Height;
+                App.Current.Properties["AppWidth"] = App.Current.MainWindow.Width;
+                App.Current.Properties["AppLeft"] = App.Current.MainWindow.Left;
+                App.Current.Properties["AppTop"] = App.Current.MainWindow.Top;
+            }
+
+            App.Current.Properties["AppIsMaximized"] = WindowState == System.Windows.WindowState.Maximized;
         }
 
         private void MetroWindow_Loaded(object sender, System.Windows.RoutedEventArgs e)

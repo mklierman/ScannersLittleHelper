@@ -109,10 +109,11 @@
                     <ComboBox
                         Grid.Row="0"
                         Grid.Column="1"
+                        Width="220"
                         ItemsSource="{Binding ScannerList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         DisplayMemberPath="Key"
-                        SelectedValuePath="Value"
-                        SelectedValue="{Binding SelectedScanner, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        SelectedValuePath="Key"
+                        SelectedValue="{Binding SelectedScannerName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock
                         Grid.Row="1"
                         Grid.Column="0"
@@ -121,6 +122,7 @@
                     <ComboBox
                         Grid.Row="1"
                         Grid.Column="1"
+                        Width="220"
                         ItemsSource="{Binding DPIList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         SelectedItem="{Binding SelectedDPI, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 </Grid>

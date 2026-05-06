@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows.Input;
 using DNTScanner.Core;
 using Prism.Commands;
@@ -15,6 +16,8 @@ namespace SimplePhotoEditor.ViewModels
     // TODO WTS: Change the URL for your privacy policy in the appsettings.json file, currently set to https://YourPrivacyUrlGoesHere
     public class SettingsViewModel : BindableBase, INavigationAware
     {
+        private const string LastSelectedScannerNameKey = "LastSelectedScannerName";
+        private const string LastSelectedDpiKeyPrefix = "LastSelectedDpi::";
         private readonly AppConfig _appConfig;
         private readonly IThemeSelectorService _themeSelectorService;
         private readonly ISystemService _systemService;
@@ -25,6 +28,7 @@ namespace SimplePhotoEditor.ViewModels
         private ICommand _privacyStatementCommand;
         private Dictionary<string, ScannerSettings> scannerList = new Dictionary<string, ScannerSettings>();
         private ScannerSettings selectedScanner;
+        private string selectedScannerName;
         private ObservableCollection<int> dpiList = new ObservableCollection<int>();
         private int selectedDPI;
 
@@ -41,18 +45,86 @@ namespace SimplePhotoEditor.ViewModels
         public ScannerSettings SelectedScanner
         {
             get { return selectedScanner; }
-            set { SetProperty(ref selectedScanner, value); PopulateDPIList(); }
+            set
+            {
+                if (SetProperty(ref selectedScanner, value))
+                {
+                    Debug.WriteLine($"[SettingsVM] SelectedScanner changed -> '{GetSelectedScannerName() ?? "<null>"}'");
+                    PopulateDPIList();
+                    SaveSelectedScannerName();
+                }
+            }
+        }
+
+        public string SelectedScannerName
+        {
+            get { return selectedScannerName; }
+            set
+            {
+                if (SetProperty(ref selectedScannerName, value))
+                {
+                    Debug.WriteLine($"[SettingsVM] SelectedScannerName changed -> '{SelectedScannerName ?? "<null>"}'");
+                    if (!string.IsNullOrWhiteSpace(SelectedScannerName) && ScannerList.TryGetValue(SelectedScannerName, out var scanner))
+                    {
+                        SelectedScanner = scanner;
+                    }
+                    else
+                    {
+                        SelectedScanner = null;
+                        DPIList.Clear();
+                        SelectedDPI = 0;
+                    }
+                }
+            }
         }
 
         private void PopulateScanners()
         {
-            ScannerList.Clear();
-            var scanners = SystemDevices.GetScannerDevices();
-            foreach (var scanner in scanners)
+            Debug.WriteLine("[SettingsVM] PopulateScanners: start");
+            try
             {
-                scanner.ScannerDeviceSettings.TryGetValue("Name", out object scannerName);
-                ScannerList.Add(scannerName.ToString(), scanner);
+                var newScannerList = new Dictionary<string, ScannerSettings>();
+                var scanners = SystemDevices.GetScannerDevices();
+                var discoveredCount = 0;
+                foreach (var scanner in scanners)
+                {
+                    try
+                    {
+                        discoveredCount++;
+                        scanner.ScannerDeviceSettings.TryGetValue("Name", out object scannerName);
+                        var name = scannerName?.ToString();
+                        if (string.IsNullOrWhiteSpace(name))
+                        {
+                            Debug.WriteLine("[SettingsVM] PopulateScanners: skipping scanner with empty name");
+                            continue;
+                        }
+
+                        if (newScannerList.ContainsKey(name))
+                        {
+                            Debug.WriteLine($"[SettingsVM] PopulateScanners: duplicate scanner name '{name}', skipping duplicate entry");
+                            continue;
+                        }
+
+                        newScannerList.Add(name, scanner);
+                        Debug.WriteLine($"[SettingsVM] PopulateScanners: added '{name}'");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Keep loading other scanners if one device throws COM/runtime errors.
+                        Debug.WriteLine($"[SettingsVM] PopulateScanners: scanner item exception: {ex}");
+                    }
+                }
+
+                ScannerList = newScannerList;
+                Debug.WriteLine($"[SettingsVM] PopulateScanners: enumerated {discoveredCount} scanner item(s), valid entries={ScannerList.Count}");
+                RestoreSelectedScanner();
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SettingsVM] PopulateScanners exception: {ex}");
+            }
+
+            Debug.WriteLine("[SettingsVM] PopulateScanners: end");
         }
 
         public ObservableCollection<int> DPIList
@@ -67,19 +139,175 @@ namespace SimplePhotoEditor.ViewModels
         public int SelectedDPI
         {
             get { return selectedDPI; }
-            set { SetProperty(ref selectedDPI, value); }
+            set
+            {
+                if (SetProperty(ref selectedDPI, value))
+                {
+                    Debug.WriteLine($"[SettingsVM] SelectedDPI changed -> {SelectedDPI}");
+                    SaveSelectedDpi();
+                }
+            }
         }
 
         private void PopulateDPIList()
         {
+            Debug.WriteLine($"[SettingsVM] PopulateDPIList: start for scanner '{GetSelectedScannerName() ?? "<null>"}'");
             if (SelectedScanner != null)
             {
                 DPIList.Clear();
                 var supportedDPIs = SelectedScanner.SupportedResolutions;
+                Debug.WriteLine($"[SettingsVM] PopulateDPIList: scanner reports {supportedDPIs?.Count ?? 0} DPI value(s)");
                 foreach (var res in supportedDPIs)
                 {
                     DPIList.Add(res);
                 }
+
+                RestoreSelectedDpi();
+
+                // Keep UI and scan settings in a valid state even when
+                // previously saved DPI is missing or no longer supported.
+                if ((SelectedDPI <= 0 || !DPIList.Contains(SelectedDPI)) && DPIList.Count > 0)
+                {
+                    Debug.WriteLine($"[SettingsVM] PopulateDPIList: applying fallback DPI {DPIList[0]}");
+                    SelectedDPI = DPIList[0];
+                }
+            }
+            else
+            {
+                Debug.WriteLine("[SettingsVM] PopulateDPIList: SelectedScanner is null");
+            }
+
+            Debug.WriteLine($"[SettingsVM] PopulateDPIList: end with SelectedDPI={SelectedDPI}, DPI count={DPIList.Count}");
+        }
+
+        private void SaveSelectedScannerName()
+        {
+            var scannerName = SelectedScannerName;
+            if (string.IsNullOrWhiteSpace(scannerName))
+            {
+                scannerName = GetSelectedScannerName();
+            }
+
+            if (string.IsNullOrWhiteSpace(scannerName))
+            {
+                Debug.WriteLine("[SettingsVM] SaveSelectedScannerName: skipped (scanner name is null/empty)");
+                return;
+            }
+
+            App.Current.Properties[LastSelectedScannerNameKey] = scannerName;
+            Debug.WriteLine($"[SettingsVM] SaveSelectedScannerName: '{scannerName}'");
+        }
+
+        private string GetSelectedScannerName()
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedScannerName))
+            {
+                return SelectedScannerName;
+            }
+
+            if (SelectedScanner == null || SelectedScanner.ScannerDeviceSettings == null)
+            {
+                return null;
+            }
+
+            if (SelectedScanner.ScannerDeviceSettings.TryGetValue("Name", out var scannerNameObj))
+            {
+                var scannerName = scannerNameObj?.ToString();
+                if (!string.IsNullOrWhiteSpace(scannerName))
+                {
+                    return scannerName;
+                }
+            }
+
+            return null;
+        }
+
+        private void SaveSelectedDpi()
+        {
+            var scannerName = GetSelectedScannerName();
+            if (string.IsNullOrWhiteSpace(scannerName))
+            {
+                Debug.WriteLine("[SettingsVM] SaveSelectedDpi: skipped (scanner name is null/empty)");
+                return;
+            }
+
+            if (SelectedDPI > 0)
+            {
+                var dpiKey = $"{LastSelectedDpiKeyPrefix}{scannerName}";
+                App.Current.Properties[dpiKey] = SelectedDPI;
+                Debug.WriteLine($"[SettingsVM] SaveSelectedDpi: key='{dpiKey}', value={SelectedDPI}");
+            }
+            else
+            {
+                Debug.WriteLine($"[SettingsVM] SaveSelectedDpi: skipped (SelectedDPI={SelectedDPI})");
+            }
+        }
+
+        private void RestoreSelectedDpi()
+        {
+            try
+            {
+                var scannerName = GetSelectedScannerName();
+                if (string.IsNullOrWhiteSpace(scannerName))
+                {
+                    Debug.WriteLine("[SettingsVM] RestoreSelectedDpi: skipped (scanner name is null/empty)");
+                    return;
+                }
+
+                var dpiKey = $"{LastSelectedDpiKeyPrefix}{scannerName}";
+                if (!App.Current.Properties.Contains(dpiKey))
+                {
+                    Debug.WriteLine($"[SettingsVM] RestoreSelectedDpi: no saved DPI for key='{dpiKey}'");
+                    return;
+                }
+
+                var dpiValue = App.Current.Properties[dpiKey];
+                Debug.WriteLine($"[SettingsVM] RestoreSelectedDpi: found raw value='{dpiValue ?? "<null>"}' for key='{dpiKey}'");
+
+                var savedDpi = dpiValue is int dpiInt
+                    ? dpiInt
+                    : Convert.ToInt32(dpiValue?.ToString());
+                Debug.WriteLine($"[SettingsVM] RestoreSelectedDpi: parsed saved DPI={savedDpi}");
+
+                if (DPIList.Contains(savedDpi))
+                {
+                    Debug.WriteLine($"[SettingsVM] RestoreSelectedDpi: applying saved DPI {savedDpi}");
+                    SelectedDPI = savedDpi;
+                }
+                else
+                {
+                    Debug.WriteLine($"[SettingsVM] RestoreSelectedDpi: saved DPI {savedDpi} not in current list");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SettingsVM] RestoreSelectedDpi exception: {ex}");
+            }
+        }
+
+        private void RestoreSelectedScanner()
+        {
+            if (!App.Current.Properties.Contains(LastSelectedScannerNameKey))
+            {
+                Debug.WriteLine("[SettingsVM] RestoreSelectedScanner: no saved scanner name");
+                return;
+            }
+
+            var scannerName = App.Current.Properties[LastSelectedScannerNameKey]?.ToString();
+            if (string.IsNullOrWhiteSpace(scannerName))
+            {
+                Debug.WriteLine("[SettingsVM] RestoreSelectedScanner: saved scanner is null/empty");
+                return;
+            }
+
+            if (ScannerList.TryGetValue(scannerName, out var scanner))
+            {
+                Debug.WriteLine($"[SettingsVM] RestoreSelectedScanner: restoring '{scannerName}'");
+                SelectedScannerName = scannerName;
+            }
+            else
+            {
+                Debug.WriteLine($"[SettingsVM] RestoreSelectedScanner: saved scanner '{scannerName}' not found in current list");
             }
         }
 
@@ -109,6 +337,7 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
+            Debug.WriteLine("[SettingsVM] OnNavigatedTo");
             VersionDescription = $"SimplePhotoEditor - {_applicationInfoService.GetVersion()}";
             Theme = _themeSelectorService.GetCurrentTheme();
             PopulateScanners();
@@ -116,6 +345,9 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnNavigatedFrom(NavigationContext navigationContext)
         {
+            Debug.WriteLine("[SettingsVM] OnNavigatedFrom");
+            SaveSelectedScannerName();
+            SaveSelectedDpi();
         }
 
         private void OnSetTheme(string themeName)

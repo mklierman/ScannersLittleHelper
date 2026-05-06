@@ -59,15 +59,27 @@
                         </Grid>
                     </Grid>
                     <Grid Grid.Row="1" Height="Auto">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="50" />
-                            <ColumnDefinition Width="50" />
-                            <ColumnDefinition Width="50" />
-                            <ColumnDefinition Width="50" />
-                            <ColumnDefinition Width="50" />
-                            <ColumnDefinition Width="50" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            Grid.Row="0"
+                            Margin="{StaticResource GridMargin}"
+                            Foreground="OrangeRed"
+                            FontWeight="SemiBold"
+                            Text="{Binding ScanWarningMessage}"
+                            Visibility="{Binding ScanWarningVisibility}" />
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
                         <ToggleButton
                             Grid.Column="0"
                             IsEnabled="True"
@@ -157,35 +169,20 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button
                                 Grid.Column="1"
                                 Width="Auto"
                                 Margin="{StaticResource GridMargin}"
-                                Content="{Binding ApplyButtonText}"
-                                Command="{Binding ApplyCommand}"
-                                Visibility="{Binding ApplyCancelVisibility}" />
+                                Content="Scan Preview"
+                                Command="{Binding ScanPreview}"/>
                             <Button
                                 Grid.Column="2"
                                 Width="Auto"
                                 Margin="{StaticResource GridMargin}"
-                                Content="{Binding CancelButtonText}"
-                                Command="{Binding CancelCommand}"
-                                Visibility="{Binding ApplyCancelVisibility}" />
-                            <Button
-                                Grid.Column="3"
-                                Width="Auto"
-                                Margin="{StaticResource GridMargin}"
-                                Content="Scan Preview"
-                                Command="{Binding ScanPreview}"/>
-                            <Button
-                                Grid.Column="4"
-                                Width="Auto"
-                                Margin="{StaticResource GridMargin}"
                                 Content="Scan"
                                 Command="{Binding ScanFull}"/>
+                        </Grid>
                         </Grid>
                     </Grid>
                 </Grid>

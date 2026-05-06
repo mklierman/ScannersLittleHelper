@@ -33,6 +33,7 @@ namespace SimplePhotoEditor.ViewModels
         private ICommand rotateLeftCommand;
         private ICommand rotateRightCommand;
         private ICommand skewCommand;
+        private ICommand cancelSkewCommand;
         private ICommand undoCommand;
         private ICommand nextImageCommand;
         private ICommand previousImageCommand;
@@ -59,6 +60,7 @@ namespace SimplePhotoEditor.ViewModels
         private bool isInSkewMode = false;
         private string skewInstructions = "Draw a line along what should be horizontal";
         private Visibility skewInstructionsVisibility = Visibility.Collapsed;
+        private Visibility skewCancelVisibility = Visibility.Collapsed;
 
         public byte[] CurrentImageBytes => currentImageBytes;
 
@@ -179,6 +181,7 @@ namespace SimplePhotoEditor.ViewModels
 		}
 
 		public ICommand SkewCommand => skewCommand ?? (skewCommand = new DelegateCommand(StartSkew));
+        public ICommand CancelSkewCommand => cancelSkewCommand ?? (cancelSkewCommand = new DelegateCommand(CancelSkew));
         public ICommand UndoCommand => undoCommand ?? (undoCommand = new DelegateCommand(UndoEdit));
         public ICommand NextImageCommand => nextImageCommand ?? (nextImageCommand = new DelegateCommand(SelectNextImage));
         public ICommand PreviousImageCommand => previousImageCommand ?? (previousImageCommand = new DelegateCommand(SelectPreviousImage));
@@ -452,6 +455,27 @@ namespace SimplePhotoEditor.ViewModels
             CropSelected = false;
         }
 
+        public void CancelActiveEdits()
+        {
+            if (IsInSkewMode)
+            {
+                CancelSkew();
+            }
+        }
+
+        public void CancelCropOrSkew()
+        {
+            if (IsInSkewMode)
+            {
+                CancelSkew();
+            }
+
+            if (CropSelected || ApplyCancelVisibility == Visibility.Visible)
+            {
+                CancelCrop();
+            }
+        }
+
         private void UndoEdit()
         {
             if (imageUndoStack.Count > 0)
@@ -474,7 +498,13 @@ namespace SimplePhotoEditor.ViewModels
         public bool IsInSkewMode
         {
             get => isInSkewMode;
-            set => SetProperty(ref isInSkewMode, value);
+            set
+            {
+                if (SetProperty(ref isInSkewMode, value))
+                {
+                    SkewCancelVisibility = value ? Visibility.Visible : Visibility.Collapsed;
+                }
+            }
         }
 
         public string SkewInstructions
@@ -487,6 +517,12 @@ namespace SimplePhotoEditor.ViewModels
         {
             get => skewInstructionsVisibility;
             set => SetProperty(ref skewInstructionsVisibility, value);
+        }
+
+        public Visibility SkewCancelVisibility
+        {
+            get => skewCancelVisibility;
+            set => SetProperty(ref skewCancelVisibility, value);
         }
 
         private void StartSkew()
@@ -569,15 +605,27 @@ namespace SimplePhotoEditor.ViewModels
             // Apply the skew correction
             ApplySkewCorrection(angle);
 
-            // Remove the line and reset skew mode
+            ResetSkewMode();
+        }
+
+        private void CancelSkew()
+        {
+            isDrawingSkewLine = false;
+            ResetSkewMode();
+        }
+
+        private void ResetSkewMode()
+        {
             var imageContainer = GetImageContainer();
-            if (imageContainer != null)
+            if (imageContainer != null && skewLine != null)
             {
                 imageContainer.Children.Remove(skewLine);
-                SkewLineVisible = false;
-                IsInSkewMode = false;
-                SkewInstructionsVisibility = Visibility.Collapsed;
             }
+
+            skewLine = null;
+            SkewLineVisible = false;
+            IsInSkewMode = false;
+            SkewInstructionsVisibility = Visibility.Collapsed;
         }
 
         private void ApplySkewCorrection(double angle)
