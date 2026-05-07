@@ -59,9 +59,9 @@ namespace SimplePhotoEditor.Views
 
         private void MetroWindow_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            regionManager.Regions[Regions.Main].Add(new ScanPage(), PageKeys.Scan);
             regionManager.Regions[Regions.Main].Add(new ThumbnailPage(), PageKeys.Thumbnail);
             regionManager.Regions[Regions.Main].Add(new SingleImagePage(), PageKeys.SingleImage);
-            regionManager.Regions[Regions.Main].Add(new ScanPage(), PageKeys.Scan);
 
         }
     }

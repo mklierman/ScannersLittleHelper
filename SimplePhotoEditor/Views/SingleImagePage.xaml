@@ -78,7 +78,7 @@
                                 x:Name="PreviewImage"
                                 Margin="5"
                                 RenderOptions.BitmapScalingMode="HighQuality"
-                                Source="{Binding PreviewImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Source="{Binding PreviewImage}"
                                 Stretch="Uniform" />
                             <Border
                                 Background="#80000000"

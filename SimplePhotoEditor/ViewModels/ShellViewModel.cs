@@ -16,9 +16,11 @@ namespace SimplePhotoEditor.ViewModels
 {
     public class ShellViewModel : BindableBase
     {
+        private const string NavigationPaneOpenPropertyName = "NavigationPaneOpen";
         private readonly IRegionManager _regionManager;
         private IRegionNavigationService _navigationService;
         
+        private bool _isPaneOpen = true;
         private HamburgerMenuItem _selectedMenuItem;
         private HamburgerMenuItem _selectedOptionsMenuItem;
         private DelegateCommand _goBackCommand;
@@ -33,6 +35,18 @@ namespace SimplePhotoEditor.ViewModels
             set { SetProperty(ref _selectedMenuItem, value); }
         }
 
+        public bool IsPaneOpen
+        {
+            get { return _isPaneOpen; }
+            set
+            {
+                if (SetProperty(ref _isPaneOpen, value) && App.Current != null)
+                {
+                    App.Current.Properties[NavigationPaneOpenPropertyName] = value;
+                }
+            }
+        }
+
         public HamburgerMenuItem SelectedOptionsMenuItem
         {
             get { return _selectedOptionsMenuItem; }
@@ -42,9 +56,9 @@ namespace SimplePhotoEditor.ViewModels
         // TODO WTS: Change the icons and titles for all HamburgerMenuItems here.
         public ObservableCollection<HamburgerMenuItem> MenuItems { get; } = new ObservableCollection<HamburgerMenuItem>()
         {
+            new HamburgerMenuGlyphItem() { Label = Resources.ShellScanPage, Glyph = "\uE131", Tag = PageKeys.Scan },
             new HamburgerMenuGlyphItem() { Label = Resources.ShellThumbnailPage, Glyph = "\uF0E2", Tag = PageKeys.Thumbnail },
             new HamburgerMenuGlyphItem() { Label = Resources.ShellSingleImagePage, Glyph = "\uE130", Tag = PageKeys.SingleImage },
-            new HamburgerMenuGlyphItem() { Label = Resources.ShellScanPage, Glyph = "\uE131", Tag = PageKeys.Scan },
         };
 
         public ObservableCollection<HamburgerMenuItem> OptionMenuItems { get; } = new ObservableCollection<HamburgerMenuItem>()
@@ -69,13 +83,19 @@ namespace SimplePhotoEditor.ViewModels
 
         private void OnLoaded()
         {
+            IsPaneOpen = App.Current.Properties.Contains(NavigationPaneOpenPropertyName)
+                ? Convert.ToBoolean(App.Current.Properties[NavigationPaneOpenPropertyName].ToString())
+                : true;
+
             _navigationService = _regionManager.Regions[Regions.Main].NavigationService;
             _navigationService.Navigated += OnNavigated;
-            SelectedMenuItem = MenuItems.First();
+            SelectedMenuItem = MenuItems.FirstOrDefault(item => item.Tag?.ToString() == PageKeys.Scan) ?? MenuItems.First();
+            RequestNavigate(PageKeys.Scan);
         }
 
         private void OnUnloaded()
         {
+            App.Current.Properties[NavigationPaneOpenPropertyName] = IsPaneOpen;
             _navigationService.Navigated -= OnNavigated;
             _regionManager.Regions.Remove(Regions.Main);
         }

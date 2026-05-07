@@ -60,7 +60,7 @@
                             <Image
                                 x:Name="ImageElement"
                                 Margin="5"
-                                Source="{Binding PreviewImage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                Source="{Binding PreviewImage}" />
                             <Border
                                 Panel.ZIndex="9"
                                 Background="#80000000"

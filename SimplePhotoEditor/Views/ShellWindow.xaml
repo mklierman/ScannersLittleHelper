@@ -103,7 +103,7 @@
             x:Name="hamburgerMenu"
             DisplayMode="CompactInline"
             HamburgerButtonName="{x:Static properties:Resources.ShellHamburgerButtonName}"
-            IsPaneOpen="False"
+            IsPaneOpen="{Binding IsPaneOpen, Mode=TwoWay}"
             ItemCommand="{Binding MenuItemInvokedCommand}"
             ItemTemplateSelector="{StaticResource MenuItemTemplateSelector}"
             ItemsSource="{Binding MenuItems}"
