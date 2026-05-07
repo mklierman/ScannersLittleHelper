@@ -15,9 +15,17 @@ namespace SimplePhotoEditor.Services
         public Version GetVersion()
         {
             // Set the app version in SimplePhotoEditor > Properties > Package > PackageVersion
-            string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-            var version = FileVersionInfo.GetVersionInfo(assemblyLocation).FileVersion;
-            return new Version(version);
+            var processPath = Environment.ProcessPath;
+            if (!string.IsNullOrWhiteSpace(processPath))
+            {
+                var fileVersion = FileVersionInfo.GetVersionInfo(processPath).FileVersion;
+                if (!string.IsNullOrWhiteSpace(fileVersion))
+                {
+                    return new Version(fileVersion);
+                }
+            }
+
+            return Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0);
         }
     }
 }

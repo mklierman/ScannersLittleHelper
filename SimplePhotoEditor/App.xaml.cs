@@ -122,7 +122,7 @@ namespace SimplePhotoEditor
 
         private IConfiguration BuildConfiguration()
         {
-            var appLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            var appLocation = AppContext.BaseDirectory;
             return new ConfigurationBuilder()
                 .SetBasePath(appLocation)
                 .AddJsonFile("appsettings.json")

@@ -11,6 +11,15 @@
 	<RuntimeIdentifiers>win10-x64</RuntimeIdentifiers>
 	<ApplicationIcon>Resources\ScannersLittleHelper.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DNTScanner.Core" Version="1.1.2" />
     <PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0" />
