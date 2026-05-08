@@ -53,6 +53,7 @@ namespace SimplePhotoEditor.ViewModels
         private IDialogService DialogService;
         private IRegionManager regionManager;
         private ISessionService sessionService;
+        private readonly IToastService toastService;
 
         // Collections
         private ObservableCollection<string> saveToFolderOptions = new ObservableCollection<string>();
@@ -84,11 +85,13 @@ namespace SimplePhotoEditor.ViewModels
         /// <param name="regionManager">The region manager for navigation.</param>
         /// <param name="dialogService">The dialog service for showing dialogs.</param>
         /// <param name="sessionService">The session service for maintaining application state.</param>
-        public MetadataViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService)
+        /// <param name="toastService">Service for non-blocking save confirmations.</param>
+        public MetadataViewModel(IRegionManager regionManager, IDialogService dialogService, ISessionService sessionService, IToastService toastService)
         {
             this.regionManager = regionManager;
             DialogService = dialogService;
             this.sessionService = sessionService;
+            this.toastService = toastService;
             Tags = new ObservableCollection<string>();
             SaveToFolderOptions = new ObservableCollection<string>();
         }
@@ -755,11 +758,7 @@ namespace SimplePhotoEditor.ViewModels
                     return;
                 }
 
-                MessageBox.Show(
-                    $"The image was saved to:\n{dataToSave.NewFilePath}",
-                    "Saved",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                toastService.Show($"Saved to {dataToSave.NewFilePath}");
 
                 UpdateThumbnailDetails(GoToNextImage, dataToSave);
                 if (CallingPage == PageKeys.SingleImage)

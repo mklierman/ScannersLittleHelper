@@ -106,6 +106,11 @@ namespace SimplePhotoEditor.Managers
                 return new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
             }
 
+            if (currentFrameworkElement == null)
+            {
+                return Rectangle.Empty;
+            }
+
             return new Rectangle(
                 (int)(currentFrameworkElement.ActualWidth * 0.2),
                 (int)(currentFrameworkElement.ActualHeight * 0.2),

@@ -402,8 +402,15 @@ namespace SimplePhotoEditor.ViewModels
         }
 
         private CropManager cropper = new CropManager();
+        private FrameworkElement cropTargetElement;
         private void StartCrop(FrameworkElement frameworkElement)
         {
+            if (CurrentImageBytes == null || frameworkElement == null)
+            {
+                return;
+            }
+
+            cropTargetElement = frameworkElement;
             cropper.AddCropToElement(frameworkElement);
             ApplyCancelVisibility = Visibility.Visible;
             ApplyButtonText = "Apply Crop";
@@ -416,43 +423,73 @@ namespace SimplePhotoEditor.ViewModels
             try
             {
                 PushUndoState();
-                // Remove the crop UI first
-                cropper.RemoveCropFromCur();
-                ApplyCancelVisibility = Visibility.Hidden;
-                
+                var rect = cropper.GetCropRect();
+
+                if (rect.Width <= 0 || rect.Height <= 0)
+                {
+                    Debug.WriteLine("Invalid crop dimensions detected");
+                    return;
+                }
+
+                if (cropTargetElement == null || PreviewImage == null ||
+                    cropTargetElement.ActualWidth <= 0 || cropTargetElement.ActualHeight <= 0)
+                {
+                    return;
+                }
+
+                var previewBitmap = PreviewImage as BitmapImage;
+                if (previewBitmap == null || previewBitmap.PixelWidth <= 0 || previewBitmap.PixelHeight <= 0)
+                {
+                    return;
+                }
+
                 using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
                 {
-                    var rect = cropper.GetCropRect();
-                    Debug.WriteLine($"Crop rectangle: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
-                    Debug.WriteLine($"Image dimensions: Width={image.Width}, Height={image.Height}");
-                    
-                    if (rect.Width <= 0 || rect.Height <= 0)
+                    var controlWidth = cropTargetElement.ActualWidth;
+                    var controlHeight = cropTargetElement.ActualHeight;
+                    var imageWidth = previewBitmap.PixelWidth;
+                    var imageHeight = previewBitmap.PixelHeight;
+
+                    var uniformScale = Math.Min(controlWidth / imageWidth, controlHeight / imageHeight);
+                    var displayedWidth = imageWidth * uniformScale;
+                    var displayedHeight = imageHeight * uniformScale;
+                    var offsetX = (controlWidth - displayedWidth) / 2.0;
+                    var offsetY = (controlHeight - displayedHeight) / 2.0;
+
+                    var cropX1 = Math.Max(rect.X, (int)offsetX);
+                    var cropY1 = Math.Max(rect.Y, (int)offsetY);
+                    var cropX2 = Math.Min(rect.X + rect.Width, (int)(offsetX + displayedWidth));
+                    var cropY2 = Math.Min(rect.Y + rect.Height, (int)(offsetY + displayedHeight));
+
+                    var normalizedWidth = cropX2 - cropX1;
+                    var normalizedHeight = cropY2 - cropY1;
+                    if (normalizedWidth <= 0 || normalizedHeight <= 0)
                     {
-                        Debug.WriteLine("Invalid crop dimensions detected");
                         return;
                     }
 
-                    // Get the actual image dimensions from the preview
-                    var previewImage = PreviewImage as BitmapImage;
-                    if (previewImage == null) return;
+                    var pixelX = (int)Math.Round((cropX1 - offsetX) / uniformScale);
+                    var pixelY = (int)Math.Round((cropY1 - offsetY) / uniformScale);
+                    var pixelWidth = (int)Math.Round(normalizedWidth / uniformScale);
+                    var pixelHeight = (int)Math.Round(normalizedHeight / uniformScale);
 
-                    // Calculate the scale factors between preview and actual image
-                    double scaleX = image.Width / previewImage.PixelWidth;
-                    double scaleY = image.Height / previewImage.PixelHeight;
+                    Debug.WriteLine($"Scaled crop rectangle: X={pixelX}, Y={pixelY}, Width={pixelWidth}, Height={pixelHeight}");
 
-                    // Scale the crop rectangle to match the actual image dimensions
-                    int scaledX = (int)(rect.X * scaleX);
-                    int scaledY = (int)(rect.Y * scaleY);
-                    int scaledWidth = (int)(rect.Width * scaleX);
-                    int scaledHeight = (int)(rect.Height * scaleY);
+                    if (pixelWidth <= 0 || pixelHeight <= 0)
+                    {
+                        return;
+                    }
 
-                    Debug.WriteLine($"Scaled crop rectangle: X={scaledX}, Y={scaledY}, Width={scaledWidth}, Height={scaledHeight}");
-
-                    IMagickGeometry magickGeometry = new MagickGeometry(scaledX, scaledY, (uint)scaledWidth, (uint)scaledHeight);
+                    IMagickGeometry magickGeometry = new MagickGeometry(pixelX, pixelY, (uint)pixelWidth, (uint)pixelHeight);
                     image.Crop(magickGeometry);
                     image.ResetPage();
                     currentImageBytes = image.ToByteArray(GetOutputFormat());
                 }
+
+                // Now remove the crop UI after we've read the rectangle
+                cropper.RemoveCropFromCur();
+                ApplyCancelVisibility = Visibility.Hidden;
+                cropTargetElement = null;
                 CropSelected = false;
                 RefreshPreviewImageFromBytes(currentImageBytes);
             }

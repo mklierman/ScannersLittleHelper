@@ -92,6 +92,7 @@ namespace SimplePhotoEditor
             containerRegistry.Register<IPersistAndRestoreService, PersistAndRestoreService>();
             containerRegistry.Register<IThemeSelectorService, ThemeSelectorService>();
             containerRegistry.Register<ISessionService, SessionService>();
+            containerRegistry.RegisterSingleton<IToastService, ToastService>();
 
             // ViewModels
             containerRegistry.RegisterSingleton<MetadataViewModel>();
@@ -111,13 +112,16 @@ namespace SimplePhotoEditor
 
             // Configuration
             var configuration = BuildConfiguration();
-            var appConfig = configuration
-                .GetSection(nameof(AppConfig))
-                .Get<AppConfig>();
+            var appConfig = new AppConfig
+            {
+                ConfigurationsFolder = "SimplePhotoEditor\\Configurations",
+                AppPropertiesFileName = "AppProperties.json",
+                PrivacyStatement = "https://YourPrivacyUrlGoesHere/"
+            };
 
-            // Register configurations to IoC
+            // Register configurations to IoC (configuration is currently only used for potential future extensions)
             containerRegistry.RegisterInstance<IConfiguration>(configuration);
-            containerRegistry.RegisterInstance<AppConfig>(appConfig);
+            containerRegistry.RegisterInstance(appConfig);
         }
 
         private IConfiguration BuildConfiguration()
@@ -125,7 +129,6 @@ namespace SimplePhotoEditor
             var appLocation = AppContext.BaseDirectory;
             return new ConfigurationBuilder()
                 .SetBasePath(appLocation)
-                .AddJsonFile("appsettings.json")
                 .AddCommandLine(_startUpArgs)
                 .Build();
         }

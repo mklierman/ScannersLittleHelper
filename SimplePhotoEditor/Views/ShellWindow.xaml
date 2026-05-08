@@ -99,22 +99,46 @@
         </templateSelectors:MenuItemTemplateSelector>
     </controls:MetroWindow.Resources>
     <controls:MetroWindow.Content>
-        <controls:HamburgerMenu
-            x:Name="hamburgerMenu"
-            DisplayMode="CompactInline"
-            HamburgerButtonName="{x:Static properties:Resources.ShellHamburgerButtonName}"
-            IsPaneOpen="{Binding IsPaneOpen, Mode=TwoWay}"
-            ItemCommand="{Binding MenuItemInvokedCommand}"
-            ItemTemplateSelector="{StaticResource MenuItemTemplateSelector}"
-            ItemsSource="{Binding MenuItems}"
-            OptionsItemCommand="{Binding OptionsMenuItemInvokedCommand}"
-            OptionsItemTemplateSelector="{StaticResource MenuItemTemplateSelector}"
-            OptionsItemsSource="{Binding OptionMenuItems}"
-            SelectedItem="{Binding SelectedMenuItem}"
-            SelectedOptionsItem="{Binding SelectedOptionsMenuItem}">
-            <controls:HamburgerMenu.Content>
-                <ContentControl x:Name="hamburgerMenuContentControl" />
-            </controls:HamburgerMenu.Content>
-        </controls:HamburgerMenu>
+        <Grid>
+            <controls:HamburgerMenu
+                x:Name="hamburgerMenu"
+                DisplayMode="CompactInline"
+                HamburgerButtonName="{x:Static properties:Resources.ShellHamburgerButtonName}"
+                IsPaneOpen="{Binding IsPaneOpen, Mode=TwoWay}"
+                ItemCommand="{Binding MenuItemInvokedCommand}"
+                ItemTemplateSelector="{StaticResource MenuItemTemplateSelector}"
+                ItemsSource="{Binding MenuItems}"
+                OptionsItemCommand="{Binding OptionsMenuItemInvokedCommand}"
+                OptionsItemTemplateSelector="{StaticResource MenuItemTemplateSelector}"
+                OptionsItemsSource="{Binding OptionMenuItems}"
+                SelectedItem="{Binding SelectedMenuItem}"
+                SelectedOptionsItem="{Binding SelectedOptionsMenuItem}">
+                <controls:HamburgerMenu.Content>
+                    <ContentControl x:Name="hamburgerMenuContentControl" />
+                </controls:HamburgerMenu.Content>
+            </controls:HamburgerMenu>
+            <Border
+                x:Name="ToastHost"
+                Panel.ZIndex="1000"
+                Margin="20"
+                Padding="14,10"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                MaxWidth="440"
+                Background="{DynamicResource MahApps.Brushes.Flyout.Background}"
+                BorderBrush="{DynamicResource MahApps.Brushes.Flyout.Border}"
+                BorderThickness="1"
+                CornerRadius="4"
+                IsHitTestVisible="False"
+                Opacity="0.96"
+                SnapsToDevicePixels="True"
+                Visibility="Collapsed">
+                <TextBlock
+                    x:Name="ToastText"
+                    FontSize="14"
+                    Foreground="{DynamicResource MahApps.Brushes.Text}"
+                    TextWrapping="Wrap" />
+            </Border>
+        </Grid>
     </controls:MetroWindow.Content>
 </controls:MetroWindow>
