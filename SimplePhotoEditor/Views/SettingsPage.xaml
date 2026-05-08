@@ -106,14 +106,25 @@
                         Margin="{StaticResource SmallRightMargin}"
                         VerticalAlignment="Center"
                         Text="Scanner" />
-                    <ComboBox
+                    <StackPanel
                         Grid.Row="0"
                         Grid.Column="1"
-                        Width="220"
-                        ItemsSource="{Binding ScannerList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                        DisplayMemberPath="Key"
-                        SelectedValuePath="Key"
-                        SelectedValue="{Binding SelectedScannerName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        Grid.ColumnSpan="2"
+                        Orientation="Horizontal">
+                        <ComboBox
+                            Width="220"
+                            VerticalAlignment="Center"
+                            DisplayMemberPath="Key"
+                            ItemsSource="{Binding ScannerList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SelectedValue="{Binding SelectedScannerName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SelectedValuePath="Key" />
+                        <Button
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Center"
+                            Command="{Binding RefreshScannersCommand}"
+                            Content="Refresh scanners"
+                            ToolTip="Detect scanners again (e.g. after plugging in a device)" />
+                    </StackPanel>
                     <TextBlock
                         Grid.Row="1"
                         Grid.Column="0"

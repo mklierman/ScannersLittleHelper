@@ -81,6 +81,14 @@ namespace SimplePhotoEditor.ViewModels
             SessionService.PeviousView = PageKeys.Scan;
         }
 
+        /// <summary>
+        /// Re-runs scanner and save-folder validation (e.g. after Save To Folder changes on the scan page).
+        /// </summary>
+        public void RefreshScanReadinessWarnings()
+        {
+            ValidateScannerSelection();
+        }
+
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
             var parameter = navigationContext.Parameters["FilePath"]?.ToString();
@@ -113,6 +121,9 @@ namespace SimplePhotoEditor.ViewModels
             get => fileName;
             set => SetProperty(ref fileName, value);
         }
+
+        /// <summary>Pixel buffer for the current scan preview, including edits; null before the first scan.</summary>
+        public byte[] CurrentImageBytes => currentImageBytes;
 
         public BitmapImage PreviewImage
         {
@@ -198,6 +209,13 @@ namespace SimplePhotoEditor.ViewModels
                 return;
             }
 
+            if (MetaDataViewModel == null || !MetaDataViewModel.EnsureSaveToFolderReadyForScan())
+            {
+                return;
+            }
+
+            var outputDir = MetaDataViewModel.SelectedSaveToFolder;
+
             try
             {
                 IsScanning = true;
@@ -205,7 +223,8 @@ namespace SimplePhotoEditor.ViewModels
                 ScanWarningMessage = string.Empty;
                 ScanWarningVisibility = Visibility.Collapsed;
 
-                var scanResult = await RunScanOnStaThreadAsync(isPreview);
+                Directory.CreateDirectory(outputDir);
+                var scanResult = await RunScanOnStaThreadAsync(isPreview, outputDir);
 
                 if (!string.IsNullOrWhiteSpace(scanResult) && File.Exists(scanResult))
                 {
@@ -240,8 +259,13 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
-        private Task<string> RunScanOnStaThreadAsync(bool isPreview)
+        private Task<string> RunScanOnStaThreadAsync(bool isPreview, string scanOutputDirectory)
         {
+            if (string.IsNullOrWhiteSpace(scanOutputDirectory))
+            {
+                throw new ArgumentException("A save folder is required for scanning.", nameof(scanOutputDirectory));
+            }
+
             var tcs = new TaskCompletionSource<string>();
 
             var thread = new Thread(() =>
@@ -304,6 +328,7 @@ namespace SimplePhotoEditor.ViewModels
                     }
 
                     using var scannerDevice = new ScannerDevice(selectedScanner);
+
                     scannerDevice.ScannerPictureSettings(config =>
                     {
                         config.ColorFormat(DNTScanner.Core.ColorType.Color)
@@ -329,7 +354,7 @@ namespace SimplePhotoEditor.ViewModels
 
                     var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     var prefix = isPreview ? "Preview" : "Scan";
-                    var fileName = Path.Combine(Directory.GetCurrentDirectory(), $"{prefix}_{timestamp}.jpg");
+                    var fileName = Path.Combine(scanOutputDirectory, $"{prefix}_{timestamp}.jpg");
                     string firstSavedFilePath = null;
                     foreach (var file in scannerDevice.SaveScannedImageFiles(fileName))
                     {
@@ -341,14 +366,14 @@ namespace SimplePhotoEditor.ViewModels
 
                     foreach (var fileBytes in scannerDevice.ExtractScannedImageFiles())
                     {
-                        File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), $"{prefix}_{timestamp}_raw.jpg"), fileBytes);
+                        File.WriteAllBytes(Path.Combine(scanOutputDirectory, $"{prefix}_{timestamp}_raw.jpg"), fileBytes);
                     }
 
-                    tcs.SetResult(firstSavedFilePath);
+                    tcs.TrySetResult(firstSavedFilePath);
                 }
                 catch (Exception ex)
                 {
-                    tcs.SetException(ex);
+                    tcs.TrySetException(ex);
                 }
             });
 
@@ -367,6 +392,7 @@ namespace SimplePhotoEditor.ViewModels
             if (!App.Current.Properties.Contains(LastSelectedScannerNameKey))
             {
                 ShowScanWarning("No scanner is selected. Choose a scanner and DPI in Settings before scanning.");
+                AppendSaveFolderWarningIfNeeded();
                 return;
             }
 
@@ -374,6 +400,7 @@ namespace SimplePhotoEditor.ViewModels
             if (string.IsNullOrWhiteSpace(selectedScannerName))
             {
                 ShowScanWarning("No scanner is selected. Choose a scanner and DPI in Settings before scanning.");
+                AppendSaveFolderWarningIfNeeded();
                 return;
             }
 
@@ -385,6 +412,7 @@ namespace SimplePhotoEditor.ViewModels
             if (scanner == null)
             {
                 ShowScanWarning("The selected scanner is unavailable. Re-select an available scanner in Settings.");
+                AppendSaveFolderWarningIfNeeded();
                 return;
             }
 
@@ -392,6 +420,7 @@ namespace SimplePhotoEditor.ViewModels
             if (!App.Current.Properties.Contains(dpiKey))
             {
                 ShowScanWarning("No DPI is selected for the current scanner. Choose a DPI in Settings.");
+                AppendSaveFolderWarningIfNeeded();
                 return;
             }
 
@@ -399,6 +428,36 @@ namespace SimplePhotoEditor.ViewModels
             if (!scanner.SupportedResolutions.Contains(savedDpi))
             {
                 ShowScanWarning("The selected DPI is not supported by the current scanner. Choose another DPI in Settings.");
+            }
+
+            AppendSaveFolderWarningIfNeeded();
+        }
+
+        private void AppendSaveFolderWarningIfNeeded()
+        {
+            if (MetaDataViewModel == null)
+            {
+                return;
+            }
+
+            var path = MetaDataViewModel.SelectedSaveToFolder;
+            var needsFolder = string.IsNullOrWhiteSpace(path) ||
+                              string.Equals(path, "[Create New Directory]", StringComparison.OrdinalIgnoreCase) ||
+                              !Directory.Exists(path);
+
+            if (!needsFolder)
+            {
+                return;
+            }
+
+            const string msg = "Choose a Save To Folder in the right panel before scanning (scans are saved there).";
+            if (ScanWarningVisibility == Visibility.Visible && !string.IsNullOrEmpty(ScanWarningMessage))
+            {
+                ScanWarningMessage = ScanWarningMessage + "\n\n" + msg;
+            }
+            else
+            {
+                ShowScanWarning(msg);
             }
         }
 

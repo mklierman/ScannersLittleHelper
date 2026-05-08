@@ -99,6 +99,7 @@
                             Foreground="OrangeRed"
                             FontWeight="SemiBold"
                             Text="{Binding ScanWarningMessage}"
+                            TextWrapping="Wrap"
                             Visibility="{Binding ScanWarningVisibility}" />
                         <Grid Grid.Row="1">
                             <Grid.ColumnDefinitions>

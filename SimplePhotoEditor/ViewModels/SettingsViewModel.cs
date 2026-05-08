@@ -27,6 +27,7 @@ namespace SimplePhotoEditor.ViewModels
         private string _versionDescription;
         private ICommand _setThemeCommand;
         private ICommand _privacyStatementCommand;
+        private ICommand _refreshScannersCommand;
         private Dictionary<string, ScannerSettings> scannerList = new Dictionary<string, ScannerSettings>();
         private ScannerSettings selectedScanner;
         private string selectedScannerName;
@@ -370,6 +371,9 @@ namespace SimplePhotoEditor.ViewModels
         public ICommand SetThemeCommand => _setThemeCommand ?? (_setThemeCommand = new DelegateCommand<string>(OnSetTheme));
 
         public ICommand PrivacyStatementCommand => _privacyStatementCommand ?? (_privacyStatementCommand = new DelegateCommand(OnPrivacyStatement));
+
+        public ICommand RefreshScannersCommand =>
+            _refreshScannersCommand ??= new DelegateCommand(PopulateScanners);
 
         public SettingsViewModel(AppConfig appConfig, IThemeSelectorService themeSelectorService, ISystemService systemService, IApplicationInfoService applicationInfoService)
         {

@@ -8,6 +8,9 @@ namespace SimplePhotoEditor.ViewModels
     public class ConfirmationDialogViewModel : BindableBase, IDialogAware
     {
         private string message;
+        private string title = "Confirm";
+        private string affirmativeButtonText = "Yes";
+        private string negativeButtonText = "No";
         private DelegateCommand<string> closeDialogCommand;
 
         public string Message
@@ -16,10 +19,26 @@ namespace SimplePhotoEditor.ViewModels
             set => SetProperty(ref message, value);
         }
 
+        public string Title
+        {
+            get => title;
+            set => SetProperty(ref title, value);
+        }
+
+        public string AffirmativeButtonText
+        {
+            get => affirmativeButtonText;
+            set => SetProperty(ref affirmativeButtonText, value);
+        }
+
+        public string NegativeButtonText
+        {
+            get => negativeButtonText;
+            set => SetProperty(ref negativeButtonText, value);
+        }
+
         public DelegateCommand<string> CloseDialogCommand =>
             closeDialogCommand ??= new DelegateCommand<string>(CloseDialog);
-
-        public string Title => "Confirm";
 
         public event Action<IDialogResult> RequestClose;
 
@@ -34,9 +53,30 @@ namespace SimplePhotoEditor.ViewModels
 
         public void OnDialogOpened(IDialogParameters parameters)
         {
-            if (parameters.TryGetValue("message", out string message))
+            if (parameters.TryGetValue("message", out string msgLower))
             {
-                Message = message;
+                Message = msgLower;
+            }
+            else if (parameters.TryGetValue("Message", out string msgUpper))
+            {
+                Message = msgUpper;
+            }
+
+            if (parameters.TryGetValue("Title", out string titleParam) && !string.IsNullOrWhiteSpace(titleParam))
+            {
+                Title = titleParam;
+            }
+
+            if (parameters.TryGetValue("AffirmativeButtonText", out string affirmative) &&
+                !string.IsNullOrWhiteSpace(affirmative))
+            {
+                AffirmativeButtonText = affirmative;
+            }
+
+            if (parameters.TryGetValue("NegativeButtonText", out string negative) &&
+                !string.IsNullOrWhiteSpace(negative))
+            {
+                NegativeButtonText = negative;
             }
         }
 
@@ -48,4 +88,4 @@ namespace SimplePhotoEditor.ViewModels
             RequestClose?.Invoke(new DialogResult(dialogResult));
         }
     }
-} 
+}

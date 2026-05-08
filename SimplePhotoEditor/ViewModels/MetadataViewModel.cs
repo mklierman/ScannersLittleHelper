@@ -16,9 +16,11 @@ using System.Linq;
 using System.Windows.Input;
 using System.Diagnostics;
 using MetadataExtractor;
+using MetadataExtractor.Formats.Exif;
 using MetadataExtractor.Formats.Png;
 using Directory = System.IO.Directory;  // Explicitly use System.IO.Directory to resolve ambiguity
 using System.Collections.Generic;
+using System.Windows;
 
 namespace SimplePhotoEditor.ViewModels
 {
@@ -28,6 +30,9 @@ namespace SimplePhotoEditor.ViewModels
     /// </summary>
     public class MetadataViewModel : BindableBase
     {
+        private const string LastSaveToRootFolderKey = "LastSaveToRootFolder";
+        private const string LastSelectedSaveToFolderKey = "LastSelectedSaveToFolder";
+
         #region Private Fields
         // UI State
         private bool creatingNewDir = false;
@@ -55,6 +60,7 @@ namespace SimplePhotoEditor.ViewModels
 
         // View Models
         private SingleImageViewModel SingleImageViewModel;
+        private ScanViewModel ScanViewModel;
         private ThumbnailViewModel ThumbnailViewModel;
 
         // Data Properties
@@ -236,6 +242,12 @@ namespace SimplePhotoEditor.ViewModels
                     {
                         MaxFileNameLength = 230;
                     }
+                    PersistSaveFolderLocations();
+                    if (string.Equals(CallingPage, PageKeys.Scan, StringComparison.Ordinal))
+                    {
+                        GetScanViewModel();
+                        ScanViewModel?.RefreshScanReadinessWarnings();
+                    }
                     return;
                 }
 
@@ -249,6 +261,13 @@ namespace SimplePhotoEditor.ViewModels
                     creatingNewDir = true;
                     CreateNewDirectory();
                     creatingNewDir = false;
+                }
+
+                PersistSaveFolderLocations();
+                if (string.Equals(CallingPage, PageKeys.Scan, StringComparison.Ordinal))
+                {
+                    GetScanViewModel();
+                    ScanViewModel?.RefreshScanReadinessWarnings();
                 }
             }
         }
@@ -371,9 +390,48 @@ namespace SimplePhotoEditor.ViewModels
             Tag = string.Empty;
             SelectedTag = null;
             Tags = new ObservableCollection<string>();
-            SaveToFolderOptions = new ObservableCollection<string>();
-            SelectedSaveToFolder = null;
+            TryRestorePersistedSaveFolders();
             FocusOnFileName = false;
+        }
+
+        /// <summary>
+        /// Ensures a real save directory is selected for scanning; restores from persisted settings,
+        /// or prompts for a folder if needed.
+        /// </summary>
+        public bool EnsureSaveToFolderReadyForScan()
+        {
+            if (IsUsableSaveToFolder(SelectedSaveToFolder))
+            {
+                return true;
+            }
+
+            TryRestorePersistedSaveFolders();
+            if (IsUsableSaveToFolder(SelectedSaveToFolder))
+            {
+                return true;
+            }
+
+            MessageBox.Show(
+                "Choose a folder where scans will be saved. You can pick one now, or cancel and use Save To Folder on the right.",
+                "Save folder required",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            using var folderBrowser = new System.Windows.Forms.FolderBrowserDialog
+            {
+                ShowNewFolderButton = true,
+                RootFolder = Environment.SpecialFolder.MyComputer
+            };
+
+            if (folderBrowser.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+            {
+                return false;
+            }
+
+            SaveToRootFolder = folderBrowser.SelectedPath;
+            GetSaveToFolderOptions(SaveToRootFolder);
+            PersistSaveFolderLocations();
+            return IsUsableSaveToFolder(SelectedSaveToFolder);
         }
 
         /// <summary>
@@ -411,6 +469,64 @@ namespace SimplePhotoEditor.ViewModels
         #endregion
 
         #region Private Methods
+        private static bool IsUsableSaveToFolder(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) &&
+                   !string.Equals(path, "[Create New Directory]", StringComparison.OrdinalIgnoreCase) &&
+                   Directory.Exists(path);
+        }
+
+        private void PersistSaveFolderLocations()
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(SaveToRootFolder) && Directory.Exists(SaveToRootFolder))
+                {
+                    App.Current.Properties[LastSaveToRootFolderKey] = SaveToRootFolder;
+                }
+
+                if (!string.IsNullOrWhiteSpace(SelectedSaveToFolder) &&
+                    !string.Equals(SelectedSaveToFolder, "[Create New Directory]", StringComparison.OrdinalIgnoreCase) &&
+                    Directory.Exists(SelectedSaveToFolder))
+                {
+                    App.Current.Properties[LastSelectedSaveToFolderKey] = SelectedSaveToFolder;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"PersistSaveFolderLocations: {ex.Message}");
+            }
+        }
+
+        private void TryRestorePersistedSaveFolders()
+        {
+            try
+            {
+                var root = App.Current.Properties.Contains(LastSaveToRootFolderKey)
+                    ? App.Current.Properties[LastSaveToRootFolderKey]?.ToString()
+                    : null;
+                var preferred = App.Current.Properties.Contains(LastSelectedSaveToFolderKey)
+                    ? App.Current.Properties[LastSelectedSaveToFolderKey]?.ToString()
+                    : null;
+
+                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+                {
+                    SaveToRootFolder = null;
+                    SaveToFolderOptions = new ObservableCollection<string>();
+                    SelectedSaveToFolder = null;
+                    MaxFileNameLength = 230;
+                    return;
+                }
+
+                SaveToRootFolder = root;
+                GetSaveToFolderOptions(root, preferred);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"TryRestorePersistedSaveFolders: {ex.Message}");
+            }
+        }
+
         /// <summary>
         /// Opens a folder browser dialog to change the root folder for saving images.
         /// </summary>
@@ -481,6 +597,61 @@ namespace SimplePhotoEditor.ViewModels
         }
 
         /// <summary>
+        /// For JPEG/TIFF, Windows Shell often reports <see cref="Subject"/> equal to <see cref="Title"/> when
+        /// the EXIF Windows XP Subject tag (0x9C9F) is absent. Prefer that tag when present; otherwise
+        /// treat Subject identical to Title as empty so the UI matches an unset subject.
+        /// </summary>
+        private static void ApplySubjectForDisplay(string filePath, string titleFromShell, ref string subjectFromShell)
+        {
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            if (ext != ".jpg" && ext != ".jpeg" && ext != ".jpe" && ext != ".tif" && ext != ".tiff")
+            {
+                return;
+            }
+
+            try
+            {
+                var hasWinSubjectTag = false;
+                string xpSubjectValue = null;
+
+                foreach (var directory in ImageMetadataReader.ReadMetadata(filePath))
+                {
+                    if (!directory.ContainsTag(ExifDirectoryBase.TagWinSubject))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        xpSubjectValue = directory.GetString(ExifDirectoryBase.TagWinSubject);
+                        hasWinSubjectTag = true;
+                        break;
+                    }
+                    catch
+                    {
+                        // Ignore a bad tag and keep scanning other directories.
+                    }
+                }
+
+                if (hasWinSubjectTag)
+                {
+                    subjectFromShell = xpSubjectValue ?? string.Empty;
+                    return;
+                }
+
+                if (!string.IsNullOrEmpty(titleFromShell) &&
+                    string.Equals(subjectFromShell, titleFromShell, StringComparison.Ordinal))
+                {
+                    subjectFromShell = string.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ApplySubjectForDisplay: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Retrieves metadata from the current image file.
         /// </summary>
         private void GetMetadata()
@@ -495,8 +666,11 @@ namespace SimplePhotoEditor.ViewModels
                 using (var shellFile = ShellFile.FromFilePath(FilePath))
                 {
                     FileName = Path.GetFileNameWithoutExtension(FilePath);
-                    Title = shellFile.Properties.System.Title.Value ?? string.Empty;
-                    Subject = shellFile.Properties.System.Subject.Value ?? string.Empty;
+                    var titleFromShell = shellFile.Properties.System.Title.Value ?? string.Empty;
+                    var subjectFromShell = shellFile.Properties.System.Subject.Value ?? string.Empty;
+                    ApplySubjectForDisplay(FilePath, titleFromShell, ref subjectFromShell);
+                    Title = titleFromShell;
+                    Subject = subjectFromShell;
                     Comment = shellFile.Properties.System.Comment.Value ?? string.Empty;
                     
                     var dateTakenValue = shellFile.Properties.System.Photo.DateTaken.Value;
@@ -541,6 +715,17 @@ namespace SimplePhotoEditor.ViewModels
             }
         }
 
+        private void GetScanViewModel()
+        {
+            if (regionManager?.Regions[Regions.Main] == null) return;
+
+            var scanView = regionManager.Regions[Regions.Main].GetView(PageKeys.Scan) as ScanPage;
+            if (scanView?.DataContext is ScanViewModel viewModel)
+            {
+                ScanViewModel = viewModel;
+            }
+        }
+
         /// <summary>
         /// Handles the save operation for the current image's metadata.
         /// </summary>
@@ -565,12 +750,22 @@ namespace SimplePhotoEditor.ViewModels
                     Title = Title
                 };
 
-            SaveImage(dataToSave);
-            UpdateThumbnailDetails(GoToNextImage, dataToSave);
-            if (CallingPage == PageKeys.SingleImage)
-            {
-                UpdateSingleImageDetails(GoToNextImage, dataToSave);
-            }
+                if (!SaveImage(dataToSave))
+                {
+                    return;
+                }
+
+                MessageBox.Show(
+                    $"The image was saved to:\n{dataToSave.NewFilePath}",
+                    "Saved",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                UpdateThumbnailDetails(GoToNextImage, dataToSave);
+                if (CallingPage == PageKeys.SingleImage)
+                {
+                    UpdateSingleImageDetails(GoToNextImage, dataToSave);
+                }
             }
             finally
             {
@@ -582,7 +777,8 @@ namespace SimplePhotoEditor.ViewModels
         /// Saves the image metadata to the file.
         /// </summary>
         /// <param name="data">The metadata to save.</param>
-        private void SaveImage(ImageInfo data)
+        /// <returns>True if the file was written; false if the user cancelled overwrite or save failed.</returns>
+        private bool SaveImage(ImageInfo data)
         {
             try
             {
@@ -613,20 +809,33 @@ namespace SimplePhotoEditor.ViewModels
 
                     if (!shouldOverwrite)
                     {
-                        return;
+                        return false;
                     }
                 }
 
-                // Get the current image bytes from SingleImageViewModel
+                // Prefer in-memory bytes from the single-image editor when present; otherwise from the
+                // scan page (same issue as SingleImage: preview may exist while byte[] was never set).
                 GetSingleImageViewModel();
-                if (SingleImageViewModel != null)
+                var singleBytes = SingleImageViewModel?.CurrentImageBytes;
+                if (singleBytes != null && singleBytes.Length > 0)
                 {
-                    // Write the current image bytes to the new file
-                    File.WriteAllBytes(newFilePath, SingleImageViewModel.CurrentImageBytes);
+                    File.WriteAllBytes(newFilePath, singleBytes);
+                }
+                else if (CallingPage == PageKeys.Scan)
+                {
+                    GetScanViewModel();
+                    var scanBytes = ScanViewModel?.CurrentImageBytes;
+                    if (scanBytes != null && scanBytes.Length > 0)
+                    {
+                        File.WriteAllBytes(newFilePath, scanBytes);
+                    }
+                    else
+                    {
+                        File.Copy(FilePath, newFilePath, true);
+                    }
                 }
                 else
                 {
-                    // If we can't get the current bytes, copy the original file
                     File.Copy(FilePath, newFilePath, true);
                 }
 
@@ -655,16 +864,15 @@ namespace SimplePhotoEditor.ViewModels
                                 }
                             }
 
-                            if (!string.IsNullOrEmpty(data.Subject))
+                            // Always write Subject (including empty). Windows may mirror Title into Subject
+                            // when XP/EXIF subject is unset; skipping this block leaves that behavior.
+                            try
                             {
-                                try 
-                                { 
-                                    shellFile.Properties.System.Subject.Value = data.Subject;
-                                }
-                                catch (Exception ex) 
-                                { 
-                                    Debug.WriteLine($"Failed to set Subject: {ex.Message}"); 
-                                }
+                                shellFile.Properties.System.Subject.Value = data.Subject ?? string.Empty;
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Failed to set Subject: {ex.Message}");
                             }
 
                             if (!string.IsNullOrEmpty(data.Comment))
@@ -711,6 +919,8 @@ namespace SimplePhotoEditor.ViewModels
                         }
                     }
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -720,6 +930,7 @@ namespace SimplePhotoEditor.ViewModels
                     { "Title", "Save Error" }
                 };
                 DialogService.ShowDialog("ErrorDialog", dialogParams, null);
+                return false;
             }
         }
 
@@ -936,6 +1147,39 @@ namespace SimplePhotoEditor.ViewModels
         }
 
         /// <summary>
+        /// Index of the image being saved in the thumbnail list, or -1 if it is not shown (e.g. scan temp file).
+        /// </summary>
+        private static int ResolveThumbnailIndex(ThumbnailViewModel vm, ImageInfo data)
+        {
+            if (vm?.Images == null || vm.Images.Count == 0)
+            {
+                return -1;
+            }
+
+            if (vm.SelectedImage != null)
+            {
+                var byRef = vm.Images.IndexOf(vm.SelectedImage);
+                if (byRef >= 0)
+                {
+                    return byRef;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(data.FilePath))
+            {
+                for (var i = 0; i < vm.Images.Count; i++)
+                {
+                    if (string.Equals(vm.Images[i].FilePath, data.FilePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
         /// Updates the thumbnail view with the latest metadata changes.
         /// </summary>
         private void UpdateThumbnailDetails(string GoToNextImage, ImageInfo data)
@@ -943,7 +1187,12 @@ namespace SimplePhotoEditor.ViewModels
             GetThumbnailViewModel();
             if (ThumbnailViewModel?.Images == null) return;
 
-            var currentImageIndex = ThumbnailViewModel.Images.IndexOf(ThumbnailViewModel.SelectedImage);
+            var currentImageIndex = ResolveThumbnailIndex(ThumbnailViewModel, data);
+            if (currentImageIndex < 0)
+            {
+                return;
+            }
+
             if (ThumbnailViewModel.CurrentFolder != data.SelectedSaveToFolder)
             {
                 ThumbnailViewModel.Images.RemoveAt(currentImageIndex);
@@ -990,10 +1239,25 @@ namespace SimplePhotoEditor.ViewModels
         /// </summary>
         private void OrderSaveToFolderOptions()
         {
+            if (SaveToFolderOptions == null || SaveToFolderOptions.Count < 2)
+            {
+                return;
+            }
+
             var newDir = SaveToFolderOptions[SaveToFolderOptions.Count - 1];
-            var root = SaveToRootFolder ?? Path.GetDirectoryName(FilePath);
-            SaveToFolderOptions.RemoveAt(SaveToFolderOptions.Count - 1); // Remove create new dir option
-            SaveToFolderOptions.RemoveAt(0); // Remove root
+            var root = SaveToRootFolder;
+            if (string.IsNullOrEmpty(root) && !string.IsNullOrEmpty(FilePath))
+            {
+                root = Path.GetDirectoryName(FilePath);
+            }
+
+            if (string.IsNullOrEmpty(root))
+            {
+                return;
+            }
+
+            SaveToFolderOptions.RemoveAt(SaveToFolderOptions.Count - 1);
+            SaveToFolderOptions.RemoveAt(0);
             SaveToFolderOptions.Sort(o => o);
             SaveToFolderOptions.Insert(0, root);
             SaveToFolderOptions.Add(newDir);
@@ -1003,12 +1267,19 @@ namespace SimplePhotoEditor.ViewModels
         /// Gets the available folder options for saving images.
         /// </summary>
         /// <param name="rootFolder">The root folder to start searching from.</param>
-        private void GetSaveToFolderOptions(string rootFolder = "")
+        /// <param name="preferredSelectedFolder">Optional folder to select if it still exists under the root.</param>
+        private void GetSaveToFolderOptions(string rootFolder = "", string preferredSelectedFolder = null)
         {
             SaveToFolderOptions.Clear();
             DirectoryInfo directoryInfo;
             if (string.IsNullOrEmpty(rootFolder))
             {
+                if (string.IsNullOrEmpty(FilePath))
+                {
+                    SaveToFolderOptions.Add("[Create New Directory]");
+                    return;
+                }
+
                 directoryInfo = new DirectoryInfo(Path.GetDirectoryName(FilePath));
             }
             else
@@ -1022,8 +1293,23 @@ namespace SimplePhotoEditor.ViewModels
             {
                 SaveToFolderOptions.Add(dir.FullName);
             }
+
             SaveToFolderOptions.Add("[Create New Directory]");
             OrderSaveToFolderOptions();
+
+            if (!string.IsNullOrWhiteSpace(preferredSelectedFolder) && Directory.Exists(preferredSelectedFolder))
+            {
+                var normalized = Path.GetFullPath(preferredSelectedFolder);
+                var match = SaveToFolderOptions.FirstOrDefault(o =>
+                    !string.Equals(o, "[Create New Directory]", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(Path.GetFullPath(o), normalized, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    SelectedSaveToFolder = match;
+                    return;
+                }
+            }
+
             SelectedSaveToFolder = directoryInfo.FullName;
         }
 
