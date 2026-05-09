@@ -103,5 +103,48 @@ namespace SimplePhotoEditor.Tests.ViewModels
 
             Assert.Null(ex);
         }
+
+        [Fact]
+        public void OnDialogClosed_DoesNothing()
+        {
+            var sut = new NewFolderDialogViewModel();
+
+            var ex = Record.Exception(() => sut.OnDialogClosed());
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void RaiseRequestClose_InvokesEvent()
+        {
+            var sut = new NewFolderDialogViewModel();
+            IDialogResult captured = null;
+            sut.RequestClose += r => captured = r;
+            var expected = new DialogResult(ButtonResult.OK);
+
+            sut.RaiseRequestClose(expected);
+
+            Assert.Same(expected, captured);
+        }
+
+        [Fact]
+        public void Properties_RaisePropertyChanged()
+        {
+            var sut = new NewFolderDialogViewModel();
+            var changes = new System.Collections.Generic.List<string>();
+            sut.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+
+            sut.Title = "T";
+            sut.Message = "M";
+            sut.Input = "I";
+            sut.AffirmativeButtonText = "OK!";
+            sut.NegativeButtonText = "Nope";
+
+            Assert.Contains(nameof(NewFolderDialogViewModel.Title), changes);
+            Assert.Contains(nameof(NewFolderDialogViewModel.Message), changes);
+            Assert.Contains(nameof(NewFolderDialogViewModel.Input), changes);
+            Assert.Contains(nameof(NewFolderDialogViewModel.AffirmativeButtonText), changes);
+            Assert.Contains(nameof(NewFolderDialogViewModel.NegativeButtonText), changes);
+        }
     }
 }

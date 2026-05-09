@@ -70,5 +70,28 @@ namespace SimplePhotoEditor.Tests.ViewModels
 
             Assert.Null(ex);
         }
+
+        [Fact]
+        public void OnDialogClosed_DoesNotThrow()
+        {
+            var sut = new ErrorDialogViewModel();
+
+            var ex = Record.Exception(() => sut.OnDialogClosed());
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void Message_RaisesPropertyChanged()
+        {
+            var sut = new ErrorDialogViewModel();
+            string changedProperty = null;
+            sut.PropertyChanged += (_, e) => changedProperty = e.PropertyName;
+
+            sut.Message = "updated";
+
+            Assert.Equal(nameof(ErrorDialogViewModel.Message), changedProperty);
+            Assert.Equal("updated", sut.Message);
+        }
     }
 }

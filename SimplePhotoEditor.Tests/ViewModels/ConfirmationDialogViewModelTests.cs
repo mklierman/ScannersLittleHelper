@@ -121,5 +121,28 @@ namespace SimplePhotoEditor.Tests.ViewModels
 
             Assert.Null(ex);
         }
+
+        [Fact]
+        public void OnDialogClosed_DoesNothing()
+        {
+            var sut = new ConfirmationDialogViewModel();
+
+            var ex = Record.Exception(() => sut.OnDialogClosed());
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void OnDialogOpened_LeavesDefaultsWhenParametersAreEmpty()
+        {
+            var sut = new ConfirmationDialogViewModel();
+
+            sut.OnDialogOpened(new DialogParameters());
+
+            Assert.Null(sut.Message);
+            Assert.Equal("Confirm", sut.Title);
+            Assert.Equal("Yes", sut.AffirmativeButtonText);
+            Assert.Equal("No", sut.NegativeButtonText);
+        }
     }
 }
