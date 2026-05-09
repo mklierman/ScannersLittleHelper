@@ -22,6 +22,7 @@ using DNTScanner.Core;
 using System.Runtime.InteropServices;
 using System.Linq;
 using SimplePhotoEditor.Contracts.Services;
+using SimplePhotoEditor.Core.Services;
 using ImageMagick;
 using System.Threading;
 using System.Threading.Tasks;
@@ -505,11 +506,10 @@ namespace SimplePhotoEditor.ViewModels
             }
 
             PushUndoState();
-            using var image = new MagickImage(currentImageBytes);
-            image.ColorFuzz = new Percentage(GetAutoCropFuzzPercent());
-            image.Trim();
-            image.ResetPage();
-            currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+            currentImageBytes = MagickImageTransforms.AutoTrim(
+                currentImageBytes,
+                GetAutoCropFuzzPercent(),
+                MagickFormat.Jpeg);
             RefreshPreviewImageFromBytes(currentImageBytes);
         }
 
@@ -519,12 +519,7 @@ namespace SimplePhotoEditor.ViewModels
                 ? App.Current.Properties[AutoCropStrengthKey]?.ToString()
                 : "Medium";
 
-            return strength switch
-            {
-                "Low" => 2.0,
-                "High" => 10.0,
-                _ => 5.0
-            };
+            return AutoCropFuzzResolver.GetFuzzPercentFromStrengthLabel(strength);
         }
 
         private void RotateLeft()
@@ -535,9 +530,7 @@ namespace SimplePhotoEditor.ViewModels
             }
 
             PushUndoState();
-            using var image = new MagickImage(currentImageBytes);
-            image.Rotate(-90);
-            currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+            currentImageBytes = MagickImageTransforms.Rotate(currentImageBytes, -90, MagickFormat.Jpeg);
             RefreshPreviewImageFromBytes(currentImageBytes);
         }
 
@@ -549,9 +542,7 @@ namespace SimplePhotoEditor.ViewModels
             }
 
             PushUndoState();
-            using var image = new MagickImage(currentImageBytes);
-            image.Rotate(90);
-            currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+            currentImageBytes = MagickImageTransforms.Rotate(currentImageBytes, 90, MagickFormat.Jpeg);
             RefreshPreviewImageFromBytes(currentImageBytes);
         }
 
@@ -606,49 +597,21 @@ namespace SimplePhotoEditor.ViewModels
                     return;
                 }
 
-                using var image = new MagickImage(currentImageBytes);
-                if (rect.Width <= 0 || rect.Height <= 0)
+                if (!CropPixelGeometryMapper.TryMapUiCropRectangleToPixelGeometry(
+                        rect.X,
+                        rect.Y,
+                        rect.Width,
+                        rect.Height,
+                        cropTargetElement.ActualWidth,
+                        cropTargetElement.ActualHeight,
+                        PreviewImage.PixelWidth,
+                        PreviewImage.PixelHeight,
+                        out var geometry))
                 {
                     return;
                 }
 
-                var controlWidth = cropTargetElement.ActualWidth;
-                var controlHeight = cropTargetElement.ActualHeight;
-                var imageWidth = PreviewImage.PixelWidth;
-                var imageHeight = PreviewImage.PixelHeight;
-
-                var uniformScale = Math.Min(controlWidth / imageWidth, controlHeight / imageHeight);
-                var displayedWidth = imageWidth * uniformScale;
-                var displayedHeight = imageHeight * uniformScale;
-                var offsetX = (controlWidth - displayedWidth) / 2.0;
-                var offsetY = (controlHeight - displayedHeight) / 2.0;
-
-                var cropX1 = Math.Max(rect.X, (int)offsetX);
-                var cropY1 = Math.Max(rect.Y, (int)offsetY);
-                var cropX2 = Math.Min(rect.X + rect.Width, (int)(offsetX + displayedWidth));
-                var cropY2 = Math.Min(rect.Y + rect.Height, (int)(offsetY + displayedHeight));
-
-                var normalizedWidth = cropX2 - cropX1;
-                var normalizedHeight = cropY2 - cropY1;
-                if (normalizedWidth <= 0 || normalizedHeight <= 0)
-                {
-                    return;
-                }
-
-                var pixelX = (int)Math.Round((cropX1 - offsetX) / uniformScale);
-                var pixelY = (int)Math.Round((cropY1 - offsetY) / uniformScale);
-                var pixelWidth = (int)Math.Round(normalizedWidth / uniformScale);
-                var pixelHeight = (int)Math.Round(normalizedHeight / uniformScale);
-
-                if (pixelWidth <= 0 || pixelHeight <= 0)
-                {
-                    return;
-                }
-
-                var geometry = new MagickGeometry(pixelX, pixelY, (uint)pixelWidth, (uint)pixelHeight);
-                image.Crop(geometry);
-                image.ResetPage();
-                currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
+                currentImageBytes = MagickImageTransforms.Crop(currentImageBytes, geometry, MagickFormat.Jpeg);
                 RefreshPreviewImageFromBytes(currentImageBytes);
             }
             catch
@@ -765,11 +728,7 @@ namespace SimplePhotoEditor.ViewModels
             double angle = -Math.Atan2(deltaY, deltaX) * 180 / Math.PI;
 
             PushUndoState();
-            using (var image = new MagickImage(currentImageBytes))
-            {
-                image.Rotate(angle);
-                currentImageBytes = image.ToByteArray(MagickFormat.Jpeg);
-            }
+            currentImageBytes = MagickImageTransforms.Rotate(currentImageBytes, angle, MagickFormat.Jpeg);
             RefreshPreviewImageFromBytes(currentImageBytes);
 
             if (imageContainer != null && skewLine != null)

@@ -22,6 +22,7 @@ using System.Windows.Controls;
 using ImageMagick;
 using System.Threading.Tasks;
 using SimplePhotoEditor.Contracts.Services;
+using SimplePhotoEditor.Core.Services;
 using System.Diagnostics;
 
 namespace SimplePhotoEditor.ViewModels
@@ -116,17 +117,12 @@ namespace SimplePhotoEditor.ViewModels
             try
             {
                 PushUndoState();
-                using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
-                {
-                    image.ColorFuzz = new Percentage(GetAutoCropFuzzPercent());
-                    // Trim the image (removes edges that are the same color as the corner pixels)
-                    image.Trim();
-                    image.ResetPage();
-                    
-                    // Store the result
-                    currentImageBytes = image.ToByteArray(GetOutputFormat());
-                }
-                
+                var sourceBytes = currentImageBytes ?? File.ReadAllBytes(FilePath);
+                currentImageBytes = MagickImageTransforms.AutoTrim(
+                    sourceBytes,
+                    GetAutoCropFuzzPercent(),
+                    GetOutputFormat());
+
                 RefreshPreviewImageFromBytes(currentImageBytes);
             }
             catch (Exception ex)
@@ -143,12 +139,7 @@ namespace SimplePhotoEditor.ViewModels
                 ? App.Current.Properties[AutoCropStrengthKey]?.ToString()
                 : "Medium";
 
-            return strength switch
-            {
-                "Low" => 2.0,
-                "High" => 10.0,
-                _ => 5.0
-            };
+            return AutoCropFuzzResolver.GetFuzzPercentFromStrengthLabel(strength);
         }
 
         public ICommand CropCommand => cropCommand ?? (cropCommand = new DelegateCommand<FrameworkElement>(StartCrop));
@@ -159,13 +150,10 @@ namespace SimplePhotoEditor.ViewModels
 			try
 			{
                 PushUndoState();
-				using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(tempFilePath ?? FilePath)))
-				{
-					image.Rotate(-90);
-					currentImageBytes = image.ToByteArray(GetOutputFormat());
-				}
-				
-				RefreshPreviewImageFromBytes(currentImageBytes);
+                var sourceBytes = currentImageBytes ?? File.ReadAllBytes(tempFilePath ?? FilePath);
+                currentImageBytes = MagickImageTransforms.Rotate(sourceBytes, -90, GetOutputFormat());
+
+                RefreshPreviewImageFromBytes(currentImageBytes);
 			}
 			catch (Exception ex)
 			{
@@ -181,13 +169,10 @@ namespace SimplePhotoEditor.ViewModels
 			try
 			{
                 PushUndoState();
-				using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(tempFilePath ?? FilePath)))
-				{
-					image.Rotate(90);
-					currentImageBytes = image.ToByteArray(GetOutputFormat());
-				}
-				
-				RefreshPreviewImageFromBytes(currentImageBytes);
+                var sourceBytes = currentImageBytes ?? File.ReadAllBytes(tempFilePath ?? FilePath);
+                currentImageBytes = MagickImageTransforms.Rotate(sourceBytes, 90, GetOutputFormat());
+
+                RefreshPreviewImageFromBytes(currentImageBytes);
 			}
 			catch (Exception ex)
 			{
@@ -443,48 +428,25 @@ namespace SimplePhotoEditor.ViewModels
                     return;
                 }
 
-                using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
+                var sourceBytes = currentImageBytes ?? File.ReadAllBytes(FilePath);
+                if (!CropPixelGeometryMapper.TryMapUiCropRectangleToPixelGeometry(
+                        rect.X,
+                        rect.Y,
+                        rect.Width,
+                        rect.Height,
+                        cropTargetElement.ActualWidth,
+                        cropTargetElement.ActualHeight,
+                        previewBitmap.PixelWidth,
+                        previewBitmap.PixelHeight,
+                        out var magickGeometry))
                 {
-                    var controlWidth = cropTargetElement.ActualWidth;
-                    var controlHeight = cropTargetElement.ActualHeight;
-                    var imageWidth = previewBitmap.PixelWidth;
-                    var imageHeight = previewBitmap.PixelHeight;
-
-                    var uniformScale = Math.Min(controlWidth / imageWidth, controlHeight / imageHeight);
-                    var displayedWidth = imageWidth * uniformScale;
-                    var displayedHeight = imageHeight * uniformScale;
-                    var offsetX = (controlWidth - displayedWidth) / 2.0;
-                    var offsetY = (controlHeight - displayedHeight) / 2.0;
-
-                    var cropX1 = Math.Max(rect.X, (int)offsetX);
-                    var cropY1 = Math.Max(rect.Y, (int)offsetY);
-                    var cropX2 = Math.Min(rect.X + rect.Width, (int)(offsetX + displayedWidth));
-                    var cropY2 = Math.Min(rect.Y + rect.Height, (int)(offsetY + displayedHeight));
-
-                    var normalizedWidth = cropX2 - cropX1;
-                    var normalizedHeight = cropY2 - cropY1;
-                    if (normalizedWidth <= 0 || normalizedHeight <= 0)
-                    {
-                        return;
-                    }
-
-                    var pixelX = (int)Math.Round((cropX1 - offsetX) / uniformScale);
-                    var pixelY = (int)Math.Round((cropY1 - offsetY) / uniformScale);
-                    var pixelWidth = (int)Math.Round(normalizedWidth / uniformScale);
-                    var pixelHeight = (int)Math.Round(normalizedHeight / uniformScale);
-
-                    Debug.WriteLine($"Scaled crop rectangle: X={pixelX}, Y={pixelY}, Width={pixelWidth}, Height={pixelHeight}");
-
-                    if (pixelWidth <= 0 || pixelHeight <= 0)
-                    {
-                        return;
-                    }
-
-                    IMagickGeometry magickGeometry = new MagickGeometry(pixelX, pixelY, (uint)pixelWidth, (uint)pixelHeight);
-                    image.Crop(magickGeometry);
-                    image.ResetPage();
-                    currentImageBytes = image.ToByteArray(GetOutputFormat());
+                    return;
                 }
+
+                Debug.WriteLine(
+                    $"Scaled crop rectangle: X={magickGeometry.X}, Y={magickGeometry.Y}, Width={magickGeometry.Width}, Height={magickGeometry.Height}");
+
+                currentImageBytes = MagickImageTransforms.Crop(sourceBytes, magickGeometry, GetOutputFormat());
 
                 // Now remove the crop UI after we've read the rectangle
                 cropper.RemoveCropFromCur();
@@ -686,13 +648,9 @@ namespace SimplePhotoEditor.ViewModels
             try
             {
                 PushUndoState();
-                using (var image = new MagickImage(currentImageBytes ?? File.ReadAllBytes(FilePath)))
-                {
-                    // Rotate the image to correct the skew
-                    image.Rotate(angle);
-                    currentImageBytes = image.ToByteArray(GetOutputFormat());
-                    RefreshPreviewImageFromBytes(currentImageBytes);
-                }
+                var sourceBytes = currentImageBytes ?? File.ReadAllBytes(FilePath);
+                currentImageBytes = MagickImageTransforms.Rotate(sourceBytes, angle, GetOutputFormat());
+                RefreshPreviewImageFromBytes(currentImageBytes);
             }
             catch (Exception ex)
             {
